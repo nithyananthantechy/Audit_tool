@@ -31,6 +31,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
 
   const INITIAL_FORM_DATA: Partial<User> = {
     name: '',
@@ -68,14 +69,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
       setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
       logActivity(user, ActivityType.STATUS_CHANGE, `Updated profile/role for: ${formData.name}`);
     } else {
+      if (newPasswordValue !== confirmPasswordValue) {
+        alert('Passwords do not match');
+        return;
+      }
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
-        ...(formData as User)
+        ...(formData as User),
+        password: newPasswordValue || 'password123'
       };
       setUsers(prev => [...prev, newUser]);
       logActivity(user, ActivityType.SYSTEM, `Provisioned new user: ${formData.name} as ${formData.role}`);
     }
     setFormData(INITIAL_FORM_DATA);
+    setNewPasswordValue('');
+    setConfirmPasswordValue('');
     setIsModalOpen(false);
   };
 
@@ -311,6 +319,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                     {Object.values(Department).map(d => <option key={d} value={d} className="bg-slate-900">{d}</option>)}
                   </select>
                 </div>
+                {!editingUser && (
+                  <>
+                    <div className="space-y-3">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Password</label>
+                      <input type="password" required value={newPasswordValue} onChange={e => setNewPasswordValue(e.target.value)} className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-800" placeholder="••••••••" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Confirm Password</label>
+                      <input type="password" required value={confirmPasswordValue} onChange={e => setConfirmPasswordValue(e.target.value)} className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-800" placeholder="••••••••" />
+                    </div>
+                  </>
+                )}
 
                 {editingUser && (() => {
                   const liveUser = users.find(u => u.id === editingUser.id) || editingUser;
