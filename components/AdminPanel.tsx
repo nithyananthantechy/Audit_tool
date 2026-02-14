@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, DMAXReport, Role, Department, ActivityLog, ActivityType } from '../types';
+import { User, DMAXReport, Role, Department, ActivityLog, ActivityType, ChecklistItem } from '../types';
 import {
   UserCog, UserPlus, ShieldAlert, Activity, BellRing, Mail, CheckCircle2,
   Search, Filter, X, Save, Power, PowerOff, ListRestart, History,
-  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle
+  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -16,10 +16,14 @@ interface AdminPanelProps {
   logActivity: (user: User, action: ActivityType, description: string) => void;
   onResetPassword: (userId: string, newPassword: string) => void;
   onToggleLock: (userId: string) => void;
+  checklists: ChecklistItem[];
+  setChecklists: React.Dispatch<React.SetStateAction<ChecklistItem[]>>;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activities, user, logActivity, onResetPassword, onToggleLock }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'activity'>('users');
+const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activities, user, logActivity, onResetPassword, onToggleLock, checklists, setChecklists }) => {
+  const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'checklists'>('users');
+  const [selectedDepartment, setSelectedDepartment] = useState<Department>(Department.HR);
+  const [newTask, setNewTask] = useState('');
   const [reminderSent, setReminderSent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activitySearchTerm, setActivitySearchTerm] = useState('');
@@ -94,6 +98,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
             className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
           >
             User Directory
+          </button>
+          <button
+            onClick={() => setActiveTab('checklists')}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'checklists' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+          >
+            Checklists
           </button>
           <button
             onClick={() => setActiveTab('activity')}
@@ -175,6 +185,87 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      ) : activeTab === 'checklists' ? (
+        <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl p-8">
+          <div className="flex items-center gap-6 mb-8">
+            <div className="relative">
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value as Department)}
+                className="bg-slate-950 border border-white/10 rounded-2xl px-5 py-3 text-sm font-bold text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all appearance-none pr-10"
+              >
+                {Object.values(Department).map(d => <option key={d} value={d} className="bg-slate-900">{d}</option>)}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <ArrowRightCircle size={16} className="rotate-90" />
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white">Department Protocols</h3>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{selectedDepartment} Compliance Requirements</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {checklists.filter(c => c.department === selectedDepartment).map(item => (
+              <div key={item.id} className="flex items-center justify-between p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:bg-white/[0.05] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
+                    <ListChecks size={18} />
+                  </div>
+                  <span className="text-sm font-medium text-slate-300">{item.task}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm('Delete this checklist item?')) {
+                      setChecklists(prev => prev.filter(c => c.id !== item.id));
+                      logActivity(user, ActivityType.SYSTEM, `Removed checklist item for ${selectedDepartment}: ${item.task}`);
+                    }
+                  }}
+                  className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+            {checklists.filter(c => c.department === selectedDepartment).length === 0 && (
+              <div className="text-center py-12 text-slate-500 text-xs uppercase tracking-[0.2em] font-black bg-white/[0.01] rounded-3xl border border-white/5 border-dashed">
+                No compliance protocols defined for this sector
+              </div>
+            )}
+          </div>
+
+          <div className="pt-6 border-t border-white/5">
+            <h4 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-4">Add New Protocol</h4>
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Enter new compliance task objective..."
+                className="flex-1 bg-slate-950/50 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-700"
+              />
+              <button
+                onClick={() => {
+                  if (newTask.trim()) {
+                    const newItem: ChecklistItem = {
+                      id: Math.random().toString(36).substr(2, 9),
+                      department: selectedDepartment,
+                      task: newTask.trim()
+                    };
+                    setChecklists(prev => [...prev, newItem]);
+                    logActivity(user, ActivityType.SYSTEM, `Added new checklist item for ${selectedDepartment}: ${newTask}`);
+                    setNewTask('');
+                  }
+                }}
+                disabled={!newTask.trim()}
+                className="px-8 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Plus size={16} /> Add
+              </button>
+            </div>
           </div>
         </div>
       ) : (

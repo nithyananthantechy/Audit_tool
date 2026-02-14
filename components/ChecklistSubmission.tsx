@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Evidence, AuditStatus, Department, ActivityType } from '../types';
+import { ChecklistItem, User, Evidence, AuditStatus, Department, ActivityType } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
 import { Upload, Plus, AlertCircle, CheckCircle2, X, FileText, Loader2, ClipboardList, Calendar, ChevronRight } from 'lucide-react';
 
@@ -9,11 +9,12 @@ interface ChecklistProps {
   evidence: Evidence[];
   setEvidence: React.Dispatch<React.SetStateAction<Evidence[]>>;
   logActivity: (user: User, action: ActivityType, description: string) => void;
+  checklists: ChecklistItem[];
 }
 
 const MAX_COMMENT_LENGTH = 1000;
 
-const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvidence, logActivity }) => {
+const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvidence, logActivity, checklists }) => {
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [comment, setComment] = useState('');
   const [fileName, setFileName] = useState('');
@@ -22,7 +23,7 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const departmentTasks = DEPARTMENT_CHECKLISTS.filter(t => t.department === user.department);
+  const departmentTasks = checklists.filter(t => t.department === user.department);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -231,7 +232,7 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
             </div>
           ) : (
             [...mySubmissions].reverse().map(e => {
-              const taskLabel = DEPARTMENT_CHECKLISTS.find(t => t.id === e.checklistItemId)?.task;
+              const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || 'Archived Task';
               return (
                 <div key={e.id} className="p-8 hover:bg-white/[0.01] transition-all group">
                   <div className="flex items-start gap-6">

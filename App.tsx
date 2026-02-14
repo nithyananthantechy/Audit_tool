@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Role, Department, Evidence, DMAXReport, AuditStatus, ActivityLog, ActivityType } from './types';
-import { MOCK_USERS, APP_NAME } from './constants';
+import { User, Role, Department, Evidence, DMAXReport, AuditStatus, ActivityLog, ActivityType, ChecklistItem } from './types';
+import { MOCK_USERS, APP_NAME, DEPARTMENT_CHECKLISTS } from './constants';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [dmaxStore, setDmaxStore] = useState<DMAXReport[]>([]);
   const [userStore, setUserStore] = useState<User[]>([]);
   const [activityStore, setActivityStore] = useState<ActivityLog[]>([]);
+  const [checklistStore, setChecklistStore] = useState<ChecklistItem[]>(DEPARTMENT_CHECKLISTS);
 
   useEffect(() => {
     document.title = currentUser ? `${APP_NAME} | ${currentUser.name}` : APP_NAME;
@@ -32,6 +33,7 @@ const App: React.FC = () => {
     const savedDmax = localStorage.getItem('dc_dmax');
     const savedUsers = localStorage.getItem('dc_users');
     const savedActivity = localStorage.getItem('dc_activity');
+    const savedChecklists = localStorage.getItem('dc_checklists');
 
     // Migration helper: ensures 'Production' is renamed to 'Operations'
     const migrate = (items: any[]) => {
@@ -58,6 +60,7 @@ const App: React.FC = () => {
     if (savedEvidence) setEvidenceStore(migrate(JSON.parse(savedEvidence)));
     if (savedDmax) setDmaxStore(migrate(JSON.parse(savedDmax)));
     if (savedActivity) setActivityStore(migrate(JSON.parse(savedActivity)));
+    if (savedChecklists) setChecklistStore(JSON.parse(savedChecklists));
 
     if (savedUsers) {
       setUserStore(migrate(JSON.parse(savedUsers)));
@@ -71,7 +74,8 @@ const App: React.FC = () => {
     localStorage.setItem('dc_dmax', JSON.stringify(dmaxStore));
     localStorage.setItem('dc_users', JSON.stringify(userStore));
     localStorage.setItem('dc_activity', JSON.stringify(activityStore));
-  }, [evidenceStore, dmaxStore, userStore, activityStore]);
+    localStorage.setItem('dc_checklists', JSON.stringify(checklistStore));
+  }, [evidenceStore, dmaxStore, userStore, activityStore, checklistStore]);
 
   const logActivity = useCallback((user: User, action: ActivityType, description: string) => {
     const newLog: ActivityLog = {
@@ -197,7 +201,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard user={currentUser} evidence={evidenceStore} dmax={dmaxStore} />;
       case 'checklists':
-        return <ChecklistSubmission user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} logActivity={logActivity} />;
+        return <ChecklistSubmission user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} logActivity={logActivity} checklists={checklistStore} />;
       case 'dmax':
         return <DMAXModule user={currentUser} reports={dmaxStore} setReports={setDmaxStore} logActivity={logActivity} />;
       case 'approvals':
@@ -205,7 +209,7 @@ const App: React.FC = () => {
       case 'executive':
         return <CEOView evidence={evidenceStore} dmax={dmaxStore} setEvidence={setEvidenceStore} setDmax={setDmaxStore} user={currentUser} logActivity={logActivity} />;
       case 'admin':
-        return <AdminPanel dmax={dmaxStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} />;
+        return <AdminPanel dmax={dmaxStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} checklists={checklistStore} setChecklists={setChecklistStore} />;
       default:
         return <Dashboard user={currentUser} evidence={evidenceStore} dmax={dmaxStore} />;
     }
