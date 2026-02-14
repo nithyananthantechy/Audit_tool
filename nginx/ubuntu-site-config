@@ -1,0 +1,27 @@
+server {
+    listen 80;
+    server_name _;  # Replace with your domain or IP address
+
+    # Path to the build output directory
+    root /var/www/desicrew-compliance/dist;
+    index index.html;
+
+    # Gzip compression for faster load times
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static asset caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # Security headers (optional but recommended)
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+}

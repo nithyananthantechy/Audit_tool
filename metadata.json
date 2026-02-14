@@ -1,0 +1,7 @@
+{
+  "name": "DesiCrew Audit & Compliance Manager",
+  "description": "A centralized compliance management system for DesiCrew Solutions, handling department-specific audits, DMAX reports, and multi-level approval workflows.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
