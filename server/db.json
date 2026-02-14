@@ -1,0 +1,95 @@
+{
+  "users": [
+    {
+      "id": "u1",
+      "name": "System Admin",
+      "email": "admin@desicrew.in",
+      "role": "Super Admin",
+      "department": "Admin",
+      "isActive": true,
+      "password": "password123",
+      "isLocked": false,
+      "loginAttempts": 0
+    },
+    {
+      "id": "9ykf4mwwi",
+      "name": "Gowri Amutha",
+      "email": "gowriamutha@desicrew.in",
+      "role": "Super Admin",
+      "department": "IT",
+      "isActive": true,
+      "isLocked": false,
+      "loginAttempts": 0,
+      "password": "Desicrew@2026"
+    }
+  ],
+  "evidence": [],
+  "dmax": [],
+  "activity": [
+    {
+      "id": "y1mf3wyfr",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "System",
+      "description": "Provisioned new user: Gowri Amutha as Super Admin",
+      "timestamp": "14/02/2026, 15:11:52"
+    },
+    {
+      "id": "pcck9qkim",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "14/02/2026, 15:10:27"
+    }
+  ],
+  "checklists": [
+    {
+      "id": "hr1",
+      "department": "HR",
+      "task": "Monthly Payroll Register Approval"
+    },
+    {
+      "id": "hr2",
+      "department": "HR",
+      "task": "New Hire Documentation Completion"
+    },
+    {
+      "id": "hr3",
+      "department": "HR",
+      "task": "Statutory Compliance (PF/ESI) Filing"
+    },
+    {
+      "id": "it1",
+      "department": "IT",
+      "task": "Server Patch Management Log"
+    },
+    {
+      "id": "it2",
+      "department": "IT",
+      "task": "Access Review Audit Trail"
+    },
+    {
+      "id": "it3",
+      "department": "IT",
+      "task": "Backup & Disaster Recovery Test"
+    },
+    {
+      "id": "op1",
+      "department": "Operations",
+      "task": "Daily Output Verification"
+    },
+    {
+      "id": "op2",
+      "department": "Operations",
+      "task": "Quality Assurance Sample Test"
+    },
+    {
+      "id": "op3",
+      "department": "Operations",
+      "task": "Shift Handover Documentation"
+    }
+  ]
+}

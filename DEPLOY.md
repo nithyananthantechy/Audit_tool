@@ -40,7 +40,29 @@ The `deploy.sh` script handles:
 - Configuring Nginx automatically
 - Setting correct permissions
 
-## 3. Configure Environment Variables
+### 3. Backend Server Setup (Required for Data Sync)
+
+The application now uses a lightweight Node.js backend to sync data between users.
+
+1.  **Navigate to the server directory:**
+    ```bash
+    cd /var/www/desicrew-compliance/server
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Start the server:**
+    For production, use `nohup` to keep it running in the background:
+    ```bash
+    nohup node server.js > server.log 2>&1 &
+    ```
+
+    *To stop the server later if needed: `pkill -f "node server.js"`*
+
+## 4. Configure Environment Variables
 
 The script will create a placeholder `.env` file if one doesn't exist. You must edit it to add your real API keys:
 

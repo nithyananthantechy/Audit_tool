@@ -1,6 +1,6 @@
 import { User, ActivityLog, ChecklistItem, Evidence, DMAXReport } from './types';
 
-const API_Base = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_Base = import.meta.env.VITE_API_URL || '/api';
 
 export const api = {
     getData: async () => {
