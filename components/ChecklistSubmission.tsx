@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChecklistItem, User, Evidence, AuditStatus, Department, ActivityType } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
 import { Upload, Plus, AlertCircle, CheckCircle2, X, FileText, Loader2, ClipboardList, Calendar, ChevronRight } from 'lucide-react';
+import { api } from '../api';
 
 interface ChecklistProps {
   user: User;
@@ -68,18 +69,24 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
         status: AuditStatus.SUBMITTED
       };
 
+      // Optimistic update
       setEvidence(prev => [...prev, newEvidence]);
-      logActivity(user, ActivityType.SUBMISSION, `Submitted evidence for task: ${taskObj?.task || selectedTaskId}`);
 
-      setSelectedTaskId('');
-      setComment('');
-      setFileName('');
-      setFileUrl('');
-      setIsSubmitting(false);
-      setShowSuccess(true);
+      api.addEvidence(newEvidence).then(() => {
+        logActivity(user, ActivityType.SUBMISSION, `Submitted evidence for task: ${taskObj?.task || selectedTaskId}`);
 
-      // Auto-hide success message
-      setTimeout(() => setShowSuccess(false), 5000);
+        setSelectedTaskId('');
+        setComment('');
+        setFileName('');
+        setFileUrl('');
+        setIsSubmitting(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 5000);
+      }).catch(err => {
+        console.error(err);
+        setIsSubmitting(false);
+        setError("Failed to submit evidence to server");
+      });
     }, 1200);
   };
 

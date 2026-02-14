@@ -6,6 +6,7 @@ import {
   Search, Filter, X, Save, Power, PowerOff, ListRestart, History,
   ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2
 } from 'lucide-react';
+import { api } from '../api';
 
 interface AdminPanelProps {
   dmax: DMAXReport[];
@@ -78,8 +79,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
         ...(formData as User),
         password: newPasswordValue || 'password123'
       };
+      // Optimistic update
       setUsers(prev => [...prev, newUser]);
-      logActivity(user, ActivityType.SYSTEM, `Provisioned new user: ${formData.name} as ${formData.role}`);
+      api.createUser(newUser).then(() => {
+        logActivity(user, ActivityType.SYSTEM, `Provisioned new user: ${formData.name} as ${formData.role}`);
+      }).catch(err => {
+        console.error(err);
+        alert("Failed to create user on server");
+      });
     }
     setFormData(INITIAL_FORM_DATA);
     setNewPasswordValue('');
@@ -229,7 +236,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                   onClick={() => {
                     if (confirm('Delete this checklist item?')) {
                       setChecklists(prev => prev.filter(c => c.id !== item.id));
-                      logActivity(user, ActivityType.SYSTEM, `Removed checklist item for ${selectedDepartment}: ${item.task}`);
+                      try {
+                        api.deleteChecklist(item.id);
+                        logActivity(user, ActivityType.SYSTEM, `Removed checklist item for ${selectedDepartment}: ${item.task}`);
+                      } catch (e) {
+                        console.error(e);
+                      }
                     }
                   }}
                   className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
@@ -264,7 +276,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                       task: newTask.trim()
                     };
                     setChecklists(prev => [...prev, newItem]);
-                    logActivity(user, ActivityType.SYSTEM, `Added new checklist item for ${selectedDepartment}: ${newTask}`);
+                    try {
+                      api.addChecklist(newItem);
+                      logActivity(user, ActivityType.SYSTEM, `Added new checklist item for ${selectedDepartment}: ${newTask}`);
+                    } catch (e) { console.error(e); }
                     setNewTask('');
                   }
                 }}

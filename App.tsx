@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Role, Department, Evidence, DMAXReport, AuditStatus, ActivityLog, ActivityType, ChecklistItem } from './types';
 import { MOCK_USERS, APP_NAME, DEPARTMENT_CHECKLISTS } from './constants';
+import { api } from './api';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -29,55 +30,24 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    const savedEvidence = localStorage.getItem('dc_evidence');
-    const savedDmax = localStorage.getItem('dc_dmax');
-    const savedUsers = localStorage.getItem('dc_users');
-    const savedActivity = localStorage.getItem('dc_activity');
-    const savedChecklists = localStorage.getItem('dc_checklists');
-
-    // Migration helper: ensures 'Production' is renamed to 'Operations'
-    const migrate = (items: any[]) => {
-      if (!Array.isArray(items)) return [];
-      return items.map(item => {
-        let updated = { ...item };
-        if (updated.department === 'Production') {
-          updated.department = Department.OPERATIONS;
-        }
-        // Security migration: ensure every user has a password and security fields
-        if (!updated.password) {
-          updated.password = 'password123';
-        }
-        if (updated.isLocked === undefined) {
-          updated.isLocked = false;
-        }
-        if (updated.loginAttempts === undefined) {
-          updated.loginAttempts = 0;
-        }
-        return updated;
-      });
+    const fetchData = async () => {
+      try {
+        const data = await api.getData();
+        if (data.users) setUserStore(data.users);
+        if (data.evidence) setEvidenceStore(data.evidence);
+        if (data.dmax) setDmaxStore(data.dmax);
+        if (data.activity) setActivityStore(data.activity);
+        if (data.checklists) setChecklistStore(data.checklists);
+      } catch (error) {
+        console.error("Failed to load data from server:", error);
+      }
     };
-
-    if (savedEvidence) setEvidenceStore(migrate(JSON.parse(savedEvidence)));
-    if (savedDmax) setDmaxStore(migrate(JSON.parse(savedDmax)));
-    if (savedActivity) setActivityStore(migrate(JSON.parse(savedActivity)));
-    if (savedChecklists) setChecklistStore(JSON.parse(savedChecklists));
-
-    if (savedUsers) {
-      setUserStore(migrate(JSON.parse(savedUsers)));
-    } else {
-      setUserStore(MOCK_USERS);
-    }
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('dc_evidence', JSON.stringify(evidenceStore));
-    localStorage.setItem('dc_dmax', JSON.stringify(dmaxStore));
-    localStorage.setItem('dc_users', JSON.stringify(userStore));
-    localStorage.setItem('dc_activity', JSON.stringify(activityStore));
-    localStorage.setItem('dc_checklists', JSON.stringify(checklistStore));
-  }, [evidenceStore, dmaxStore, userStore, activityStore, checklistStore]);
+  // Removed localStorage sync effect
 
-  const logActivity = useCallback((user: User, action: ActivityType, description: string) => {
+  const logActivity = useCallback(async (user: User, action: ActivityType, description: string) => {
     const newLog: ActivityLog = {
       id: Math.random().toString(36).substr(2, 9),
       userId: user.id,
@@ -87,7 +57,13 @@ const App: React.FC = () => {
       description,
       timestamp: new Date().toLocaleString()
     };
+    // Optimistic update
     setActivityStore(prev => [newLog, ...prev].slice(0, 1000));
+    try {
+      await api.logActivity(newLog);
+    } catch (e) {
+      console.error("Failed to log activity", e);
+    }
   }, []);
 
   const handleLogin = (email: string, password?: string) => {
@@ -163,20 +139,34 @@ const App: React.FC = () => {
     }
   };
 
-  const handleResetUserPassword = (userId: string, newPassword: string) => {
-    setUserStore(prev => prev.map(u => u.id === userId ? { ...u, password: newPassword } : u));
+  const handleResetUserPassword = async (userId: string, newPassword: string) => {
     const targetUser = userStore.find(u => u.id === userId);
-    if (targetUser && currentUser) {
-      logActivity(currentUser, ActivityType.SYSTEM, `Admin reset password for: ${targetUser.name}`);
-    }
+    if (!targetUser) return;
+
+    const updatedUser = { ...targetUser, password: newPassword };
+    setUserStore(prev => prev.map(u => u.id === userId ? updatedUser : u));
+
+    try {
+      await api.updateUser(updatedUser);
+      if (currentUser) {
+        logActivity(currentUser, ActivityType.SYSTEM, `Admin reset password for: ${targetUser.name}`);
+      }
+    } catch (e) { console.error(e); }
   };
 
-  const handleToggleUserLock = (userId: string) => {
-    setUserStore(prev => prev.map(u => u.id === userId ? { ...u, isLocked: !u.isLocked, loginAttempts: 0 } : u));
+  const handleToggleUserLock = async (userId: string) => {
     const targetUser = userStore.find(u => u.id === userId);
-    if (targetUser && currentUser) {
-      logActivity(currentUser, ActivityType.SYSTEM, `Admin ${targetUser.isLocked ? 'Unlocked' : 'Locked'} account for: ${targetUser.name}`);
-    }
+    if (!targetUser) return;
+
+    const updatedUser = { ...targetUser, isLocked: !targetUser.isLocked, loginAttempts: 0 };
+    setUserStore(prev => prev.map(u => u.id === userId ? updatedUser : u));
+
+    try {
+      await api.updateUser(updatedUser);
+      if (currentUser) {
+        logActivity(currentUser, ActivityType.SYSTEM, `Admin ${targetUser.isLocked ? 'Unlocked' : 'Locked'} account for: ${targetUser.name}`);
+      }
+    } catch (e) { console.error(e); }
   };
 
   const handleLogout = () => {
@@ -185,10 +175,16 @@ const App: React.FC = () => {
     setCurrentUser(null);
   };
 
-  const handleUpdateProfile = (updatedUser: User) => {
+  const handleUpdateProfile = async (updatedUser: User) => {
     setUserStore(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     setCurrentUser(updatedUser);
-    logActivity(updatedUser, ActivityType.PROFILE_UPDATE, `User updated their profile information.`);
+    try {
+      await api.updateUser(updatedUser);
+      logActivity(updatedUser, ActivityType.PROFILE_UPDATE, `User updated their profile information.`);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save profile on server");
+    }
   };
 
   if (loginState === 'landing') return <LandingPage onLoginClick={() => setLoginState('login')} />;

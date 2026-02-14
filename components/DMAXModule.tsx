@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { User, DMAXReport, AuditStatus, Department, Role } from '../types';
 import { STATUS_COLORS } from '../constants';
 import { FilePlus2, Search, Calendar, CheckCircle2, Loader2, FileText, ChevronRight, Upload, X, AlertCircle, Download } from 'lucide-react';
+import { api } from '../api';
 
 interface DMAXProps {
   user: User;
@@ -98,15 +99,22 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
         fileSize
       };
 
+      // Optimistic update
       setReports(prev => [...prev, newReport]);
-      setContent('');
-      setFileName('');
-      setFileSize('');
-      setFileUrl('');
-      setIsSubmitting(false);
-      setShowSuccess(true);
 
-      setTimeout(() => setShowSuccess(false), 5000);
+      api.addDmax(newReport).then(() => {
+        setContent('');
+        setFileName('');
+        setFileSize('');
+        setFileUrl('');
+        setIsSubmitting(false);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 5000);
+      }).catch(err => {
+        console.error(err);
+        setIsSubmitting(false);
+        setError("Failed to create report on server");
+      });
     }, 1500);
   };
 
