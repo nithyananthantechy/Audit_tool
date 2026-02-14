@@ -87,15 +87,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             </div>
 
             <div className="flex items-center gap-8 pt-4">
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500">
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
-              </div>
+              <div className="h-px w-16 bg-blue-500/50"></div>
               <p className="text-xs font-medium text-slate-500">
-                Trusted by <span className="text-white font-bold">500+</span> internal contributors
+                <span className="text-white font-bold">Secure</span> Enterprise Access
               </p>
             </div>
           </div>
