@@ -1,10 +1,10 @@
 
 import { Department, ChecklistItem, User, Role, AuditStatus } from './types';
 
-export const APP_NAME = "Compliance & Audit Portal";
+export const APP_NAME = "Audit & Compliance Portal";
 export const COMPANY_NAME = "DesiCrew Solutions Private Limited";
 export const COMPANY_TAGLINE = "Empowering Compliance Through Digital Excellence";
-export const DESICREW_LOGO = "logo.png";
+export const DESICREW_LOGO = "/logo.png";
 
 export const MOCK_USERS: User[] = [
   {
