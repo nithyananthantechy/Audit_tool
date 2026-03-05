@@ -85,7 +85,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
       const newUser: User = {
         id: Math.random().toString(36).substr(2, 9),
         ...(formData as User),
-        password: newPasswordValue || 'password123'
+        password: (newPasswordValue || 'password123').trim()
       };
       // Optimistic update
       setUsers(prev => [...prev, newUser]);

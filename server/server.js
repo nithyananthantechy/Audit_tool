@@ -7,7 +7,15 @@ const app = express();
 const PORT = 3001;
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://192.168.5.44:3000'],
+    origin: function (origin, callback) {
+        // Allow any 192.168.x.x origin or localhost for local network access
+        if (!origin || origin.startsWith('http://localhost') || /^http:\/\/192\.168\.\d+\.\d+(:3000)?$/.test(origin)) {
+            callback(null, true);
+        } else {
+            console.log("CORS blocked origin:", origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -16,9 +24,9 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false,
+        secure: false, // set to true in production with HTTPS
         httpOnly: true,
-        maxAge: 8 * 60 * 60 * 1000 // 8 hours
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
 
@@ -82,7 +90,10 @@ app.post('/api/auth/login', (req, res) => {
     if (user.isLocked) return res.status(403).json({ error: 'Account locked. Contact Super Admin.' });
 
     const storedPwd = (user.password || 'password123').trim();
-    if (password.trim() !== storedPwd) {
+    const providedPwd = (password || '').trim();
+
+    if (providedPwd !== storedPwd) {
+        console.log(`[AUTH] Failed login for ${email}. Provided: "${providedPwd}", Stored: "${storedPwd}"`);
         const attempts = (user.loginAttempts || 0) + 1;
         const idx = db.users.findIndex(u => u.id === user.id);
         db.users[idx].loginAttempts = attempts;
@@ -94,6 +105,8 @@ app.post('/api/auth/login', (req, res) => {
         writeDb(db);
         return res.status(401).json({ error: `Invalid password. ${3 - attempts} attempts remaining.` });
     }
+
+    console.log(`[AUTH] Successful login for ${email}`);
 
     // Reset login attempts on success
     const idx = db.users.findIndex(u => u.id === user.id);
