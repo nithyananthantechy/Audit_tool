@@ -67,8 +67,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
-      logActivity(user, ActivityType.STATUS_CHANGE, `Updated profile/role for: ${formData.name}`);
+      const updatedUser = { ...editingUser, ...formData } as User;
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? updatedUser : u));
+      api.updateUser(updatedUser)
+        .then(() => {
+          logActivity(user, ActivityType.STATUS_CHANGE, `Updated profile/role for: ${formData.name}`);
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Failed to update user on server");
+        });
     } else {
       if (newPasswordValue !== confirmPasswordValue) {
         alert('Passwords do not match');

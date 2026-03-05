@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { DESICREW_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
-import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => boolean;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
@@ -11,17 +11,18 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate auth delay
-    setTimeout(() => {
-      const success = onLogin(email, password);
-      if (!success) {
-        setIsLoading(false);
-      }
-    }, 1200);
+    setError(null);
+
+    const result = await onLogin(email, password);
+    if (!result.success) {
+      setIsLoading(false);
+      setError(result.error || 'Invalid credentials');
+    }
   };
 
   return (
@@ -74,7 +75,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@desicrew.in"
+                    placeholder="user@corporate.in"
                     className="w-full pl-14 pr-4 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-sm font-medium text-white outline-none placeholder:text-white/10"
                     required
                   />
@@ -105,6 +106,13 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
                   </button>
                 </div>
               </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <ShieldAlert className="text-red-500 shrink-0" size={18} />
+                  <p className="text-[11px] font-black text-red-500 uppercase tracking-wider">{error}</p>
+                </div>
+              )}
 
               <button
                 type="submit"

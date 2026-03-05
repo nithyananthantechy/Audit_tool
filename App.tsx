@@ -104,12 +104,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = async (email: string, password?: string): Promise<boolean> => {
+  const handleLogin = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const result = await api.login(email, password || '');
       if (result.error) {
-        alert(result.error);
-        return false;
+        return { success: false, error: result.error };
       }
       if (result.user) {
         setCurrentUser(result.user);
@@ -125,12 +124,12 @@ const App: React.FC = () => {
           else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
           else setActiveTab('dashboard');
         }, 2000);
-        return true;
+        return { success: true };
       }
     } catch (err) {
-      alert('Login failed. Please check your connection.');
+      return { success: false, error: 'Login failed. Please check your connection.' };
     }
-    return false;
+    return { success: false, error: 'Unknown authentication error.' };
   };
 
   const handleResetUserPassword = async (userId: string, newPassword: string) => {
