@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { User, DMAXReport, AuditStatus, Department, Role } from '../types';
 import { STATUS_COLORS } from '../constants';
 import { FilePlus2, Search, Calendar, CheckCircle2, Loader2, FileText, ChevronRight, Upload, X, AlertCircle, Download } from 'lucide-react';
-import { api } from '../api';
+import { api } from '../apiClient';
 
 interface DMAXProps {
   user: User;

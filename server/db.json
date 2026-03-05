@@ -21,11 +21,112 @@
       "isLocked": false,
       "loginAttempts": 0,
       "password": "Desicrew@2026"
+    },
+    {
+      "id": "011egr9ah",
+      "name": "test",
+      "email": "test@desicrew.in",
+      "role": "Contributor",
+      "department": "Operations",
+      "isActive": true,
+      "isLocked": false,
+      "loginAttempts": 0,
+      "password": "123"
     }
   ],
   "evidence": [],
   "dmax": [],
   "activity": [
+    {
+      "id": "yditny1we",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "05/03/2026, 16:01:19"
+    },
+    {
+      "id": "lq0e32kw4",
+      "userId": "011egr9ah",
+      "userName": "test",
+      "department": "Operations",
+      "action": "System",
+      "description": "User signed out.",
+      "timestamp": "05/03/2026, 16:01:13"
+    },
+    {
+      "id": "iwbo8kk4h",
+      "userId": "011egr9ah",
+      "userName": "test",
+      "department": "Operations",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "05/03/2026, 16:00:20"
+    },
+    {
+      "id": "69rf12rv6",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "System",
+      "description": "Added new checklist item for Operations: Test",
+      "timestamp": "05/03/2026, 15:59:51"
+    },
+    {
+      "id": "492wpc2ho",
+      "userId": "011egr9ah",
+      "userName": "test",
+      "department": "Operations",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "05/03/2026, 15:59:15"
+    },
+    {
+      "id": "8qi6bbnba",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "System",
+      "description": "User signed out.",
+      "timestamp": "05/03/2026, 15:59:08"
+    },
+    {
+      "id": "1udj26wf3",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "System",
+      "description": "Provisioned new user: test as Contributor",
+      "timestamp": "05/03/2026, 15:58:52"
+    },
+    {
+      "id": "ts2u5eezd",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "05/03/2026, 15:58:27"
+    },
+    {
+      "id": "jsokibkbo",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "05/03/2026, 15:47:41"
+    },
+    {
+      "id": "k79n5elda",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "System",
+      "description": "User signed out.",
+      "timestamp": "14/02/2026, 15:59:13"
+    },
     {
       "id": "y1mf3wyfr",
       "userId": "u1",
@@ -90,6 +191,11 @@
       "id": "op3",
       "department": "Operations",
       "task": "Shift Handover Documentation"
+    },
+    {
+      "id": "1nlxkrcti",
+      "department": "Operations",
+      "task": "Test"
     }
   ]
 }

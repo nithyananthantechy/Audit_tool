@@ -1,24 +1,25 @@
 
 import React from 'react';
-import { User, Evidence, DMAXReport, AuditStatus, Role } from '../types';
+import { User, Evidence, DMAXReport, AuditStatus, Role, ChecklistItem } from '../types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, PieChart, Pie, Legend
 } from 'recharts';
 import { STATUS_COLORS } from '../constants';
-import { AlertTriangle, ChevronRight, FileText } from 'lucide-react';
+import { AlertTriangle, ChevronRight, FileText, CheckCircle2, Clock } from 'lucide-react';
 
 interface DashboardProps {
   user: User;
   evidence: Evidence[];
   dmax: DMAXReport[];
+  checklists: ChecklistItem[];
+  users: User[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax }) => {
-  const currentMonth = "January";
+const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists, users }) => {
+  const currentMonth = new Date().toLocaleString('default', { month: 'long' });
   const hasSubmittedDmax = dmax.some(r => r.userId === user.id && r.month === currentMonth);
 
-  // HR Role now has department-wide visibility like a Manager
   const myEvidence = (user.role === Role.MANAGER || user.role === Role.HR)
     ? evidence.filter(e => e.department === user.department)
     : evidence.filter(e => e.userId === user.id);
@@ -35,8 +36,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax }) => {
     { name: 'Pending', value: stats[2].value },
     { name: 'Rejected', value: stats[3].value },
   ];
-
   const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
+
+  // Checklist status: tasks for this user's department
+  const myDeptTasks = checklists.filter(t => t.department === user.department);
+
+  // For manager/HR: show all contributors' submission status
+  const isManagerView = user.role === Role.MANAGER || user.role === Role.HR || user.role === Role.INTERNAL_AUDITOR || user.role === Role.EXTERNAL_AUDITOR || user.role === Role.SUPER_ADMIN;
+
+  const deptContributors = users.filter(u => u.department === user.department && u.id !== user.id && (u.role === Role.CONTRIBUTOR || u.role === Role.TEAM_LEAD));
+
+  // Build checklist status matrix for current user
+  const submittedTaskIds = new Set(
+    evidence.filter(e => e.userId === user.id).map(e => e.checklistItemId)
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -61,6 +74,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax }) => {
         )}
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-white/[0.03] backdrop-blur-2xl p-6 rounded-[32px] border border-white/[0.08] group hover:border-blue-500/30 transition-all hover:-translate-y-1 duration-300">
@@ -68,47 +82,128 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax }) => {
             <div className="flex items-end justify-between">
               <span className="text-4xl font-black text-white tracking-tighter">{stat.value}</span>
               <div className={`${stat.color} text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg opacity-80 group-hover:opacity-100 transition-opacity`}>
-                Live Trace
+                Live
               </div>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Checklist Status Panel */}
+      {myDeptTasks.length > 0 && (
+        <div className="bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[40px] border border-white/[0.08] shadow-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-black text-white tracking-tight">Checklist <span className="text-blue-500">Status</span></h2>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">{user.department} Department Tasks</p>
+            </div>
+            <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-full border border-white/5">
+              {submittedTaskIds.size}/{myDeptTasks.length} Submitted
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {myDeptTasks.map(task => {
+              const submitted = submittedTaskIds.has(task.id);
+              const taskEvidence = evidence.filter(e => e.checklistItemId === task.id && e.userId === user.id);
+              const latestStatus = taskEvidence.length > 0 ? taskEvidence[taskEvidence.length - 1].status : null;
+
+              return (
+                <div key={task.id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${submitted ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                  <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${submitted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                    {submitted ? <CheckCircle2 size={18} /> : <Clock size={18} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{task.task}</p>
+                    {latestStatus && (
+                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{latestStatus}</p>
+                    )}
+                  </div>
+                  <span className={`text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${submitted ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                    {submitted ? 'Submitted' : 'Pending'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Manager view: show team member status */}
+          {isManagerView && deptContributors.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-white/5">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Team Submission Overview</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="pb-3 text-[9px] font-black text-slate-600 uppercase tracking-widest">Member</th>
+                      {myDeptTasks.map(t => (
+                        <th key={t.id} className="pb-3 px-2 text-[9px] font-black text-slate-600 uppercase tracking-widest text-center max-w-[80px]">
+                          <span className="truncate block" title={t.task}>{t.task.split(' ').slice(0, 2).join(' ')}</span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.03]">
+                    {deptContributors.map(member => (
+                      <tr key={member.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3 text-xs font-bold text-white">{member.name}</td>
+                        {myDeptTasks.map(task => {
+                          const memberSubmitted = evidence.some(e => e.userId === member.id && e.checklistItemId === task.id);
+                          return (
+                            <td key={task.id} className="py-3 px-2 text-center">
+                              {memberSubmitted
+                                ? <CheckCircle2 size={16} className="text-emerald-400 mx-auto" />
+                                : <Clock size={16} className="text-amber-400/50 mx-auto" />}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[40px] border border-white/[0.08] overflow-hidden">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8">Compliance Activity stream</h2>
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8">Compliance Activity Stream</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest">Audit Task Instance</th>
-                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest text-center">Timestamp</th>
-                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest text-right">Verification</th>
+                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest">Audit Task</th>
+                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest text-center">Date</th>
+                  <th className="pb-4 font-black text-slate-500 text-[9px] uppercase tracking-widest text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {myEvidence.slice(-5).reverse().map((e) => (
-                  <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="py-5">
-                      <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">Access Log &bull; #{e.checklistItemId.toUpperCase()}</p>
-                      <p className="text-[10px] text-slate-500 truncate max-w-[250px] mt-1 font-medium italic opacity-60">"{e.comment}"</p>
-                    </td>
-                    <td className="py-5 text-[10px] font-black text-slate-500 text-center uppercase tracking-tighter">{e.submissionDate}</td>
-                    <td className="py-5 text-right">
-                      <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border transition-all hover:scale-105 inline-block ${STATUS_COLORS[e.status].replace('bg-', 'bg-opacity-10 bg-').replace('border-', 'border-opacity-20 border-')}`}>
-                        {e.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-slate-50/5">
+                {myEvidence.slice(-5).reverse().map((e) => {
+                  const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || e.checklistItemId.toUpperCase();
+                  return (
+                    <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="py-5">
+                        <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{taskLabel}</p>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[250px] mt-1 font-medium italic opacity-60">"{e.comment}"</p>
+                      </td>
+                      <td className="py-5 text-[10px] font-black text-slate-500 text-center uppercase tracking-tighter">{e.submissionDate}</td>
+                      <td className="py-5 text-right">
+                        <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border ${STATUS_COLORS[e.status]}`}>
+                          {e.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {myEvidence.length === 0 && (
                   <tr>
                     <td colSpan={3} className="py-20 text-center text-slate-600">
                       <div className="bg-white/5 w-16 h-16 rounded-[24px] flex items-center justify-center mx-auto mb-4 border border-white/5">
                         <FileText className="text-slate-500" size={28} />
                       </div>
-                      <p className="text-xs font-black uppercase tracking-widest">No matching traces found</p>
+                      <p className="text-xs font-black uppercase tracking-widest">No submissions yet</p>
                     </td>
                   </tr>
                 )}
@@ -122,41 +217,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax }) => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={85}
-                  paddingAngle={8}
-                  dataKey="value"
-                  stroke="none"
-                >
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={85} paddingAngle={8} dataKey="value" stroke="none">
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} opacity={0.8} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', color: '#fff' }}
-                  itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', color: '#fff' }} itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', color: '#94a3b8' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-8 pt-6 border-t border-white/5 w-full text-center">
-            <p className="text-[9px] text-slate-600 font-black uppercase tracking-[0.2em]">Node Verified: {new Date().toLocaleTimeString()}</p>
+            <p className="text-[9px] text-slate-600 font-black uppercase tracking-[0.2em]">Live: {new Date().toLocaleTimeString()}</p>
           </div>
         </div>
       </div>
+
       <style>{`
         @keyframes bounce-subtle {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
         }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 3s ease-in-out infinite;
-        }
+        .animate-bounce-subtle { animation: bounce-subtle 3s ease-in-out infinite; }
       `}</style>
     </div>
   );

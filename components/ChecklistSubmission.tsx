@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChecklistItem, User, Evidence, AuditStatus, Department, ActivityType } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
 import { Upload, Plus, AlertCircle, CheckCircle2, X, FileText, Loader2, ClipboardList, Calendar, ChevronRight } from 'lucide-react';
-import { api } from '../api';
+import { api } from '../apiClient';
 
 interface ChecklistProps {
   user: User;

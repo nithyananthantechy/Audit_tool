@@ -6,7 +6,7 @@ import {
   Search, Filter, X, Save, Power, PowerOff, ListRestart, History,
   ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2
 } from 'lucide-react';
-import { api } from '../api';
+import { api } from '../apiClient';
 
 interface AdminPanelProps {
   dmax: DMAXReport[];
