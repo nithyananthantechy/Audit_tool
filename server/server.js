@@ -127,6 +127,9 @@ app.post('/api/auth/logout', (req, res) => {
     });
 });
 
+// Serve static files from the 'dist' directory
+app.use(express.static(path.join(__dirname, '../dist')));
+
 // --- API Endpoints ---
 
 // Get all data (for initialization)
@@ -228,6 +231,11 @@ app.put('/api/dmax/:id', (req, res) => {
     } else {
         res.status(404).json({ error: 'Report not found' });
     }
+});
+
+// Catch-all to serve index.html for SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 app.listen(PORT, () => {
