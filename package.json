@@ -7,7 +7,9 @@
     "dev": "concurrently \"npm run server\" \"wait-on http://localhost:3001/api/data && vite\"",
     "server": "node server/server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:prod": "NODE_ENV=production vite build",
+    "start": "NODE_ENV=production node server/server.js"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",
@@ -19,6 +21,7 @@
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "concurrently": "^9.2.1",
+    "terser": "^5.27.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "wait-on": "^9.0.4"

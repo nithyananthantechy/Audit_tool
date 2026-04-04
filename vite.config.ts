@@ -25,6 +25,19 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      minify: 'terser',
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            charts: ['recharts'],
+            icons: ['lucide-react']
+          }
+        }
+      }
     }
   };
 });
