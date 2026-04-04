@@ -38,6 +38,15 @@
   "dmax": [],
   "activity": [
     {
+      "id": "2f8dq6oky",
+      "userId": "u1",
+      "userName": "System Admin",
+      "department": "Admin",
+      "action": "Login",
+      "description": "User logged into the compliance portal.",
+      "timestamp": "4/4/2026, 12:46:11 PM"
+    },
+    {
       "id": "yditny1we",
       "userId": "u1",
       "userName": "System Admin",

@@ -2,25 +2,57 @@ import { User, ActivityLog, ChecklistItem, Evidence, DMAXReport } from './types'
 
 const API_Base = '/api';
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+    authToken = token;
+    if (token) {
+        localStorage.setItem('authToken', token);
+    } else {
+        localStorage.removeItem('authToken');
+    }
+}
+
+export function getAuthToken(): string | null {
+    if (!authToken) {
+        authToken = localStorage.getItem('authToken');
+    }
+    return authToken;
+}
+
 const fetchJSON = async (url: string, options: RequestInit = {}) => {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {})
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     const res = await fetch(url, {
         ...options,
-        credentials: 'include',  // Required for session cookies
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options.headers || {})
-        }
+        credentials: 'include',
+        headers
     });
+    
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(error.error || 'Request failed');
+    }
     return res.json();
 };
 
 export const api = {
-    // --- AUTH ---
     login: async (email: string, password: string) => {
-        return fetchJSON(`${API_Base}/auth/login`, {
+        const result = await fetchJSON(`${API_Base}/auth/login`, {
             method: 'POST',
             body: JSON.stringify({ email, password })
         });
+        if (result.token) {
+            setAuthToken(result.token);
+        }
+        return result;
     },
 
     me: async () => {
@@ -28,10 +60,11 @@ export const api = {
     },
 
     logout: async () => {
-        return fetchJSON(`${API_Base}/auth/logout`, { method: 'POST' });
+        const result = await fetchJSON(`${API_Base}/auth/logout`, { method: 'POST' });
+        setAuthToken(null);
+        return result;
     },
 
-    // --- DATA ---
     getData: async () => {
         return fetchJSON(`${API_Base}/data`);
     },

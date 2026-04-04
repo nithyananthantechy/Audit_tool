@@ -300,7 +300,67 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 italic">Audit Log functionality is retained for system records.</div>
+        <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl">
+          <div className="p-8 border-b border-white/5">
+            <div className="relative max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
+              <input
+                type="text"
+                placeholder="Search audit trail..."
+                value={activitySearchTerm}
+                onChange={e => setActivitySearchTerm(e.target.value)}
+                className="w-full bg-slate-950/40 border border-white/5 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all placeholder:text-slate-700"
+              />
+            </div>
+          </div>
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table className="w-full text-left">
+              <thead className="sticky top-0 bg-slate-900/95 backdrop-blur">
+                <tr className="bg-white/[0.02] text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5">
+                  <th className="px-8 py-4">Timestamp</th>
+                  <th className="px-8 py-4">User</th>
+                  <th className="px-8 py-4">Department</th>
+                  <th className="px-8 py-4">Action</th>
+                  <th className="px-8 py-4">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {activities
+                  .filter(a => 
+                    activitySearchTerm === '' ||
+                    a.userName.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
+                    a.action.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
+                    a.description.toLowerCase().includes(activitySearchTerm.toLowerCase())
+                  )
+                  .slice(0, 100)
+                  .map((activity) => (
+                    <tr key={activity.id} className="hover:bg-white/[0.01] transition-colors">
+                      <td className="px-8 py-4 text-[10px] font-medium text-slate-400">{activity.timestamp}</td>
+                      <td className="px-8 py-4 text-sm font-black text-white">{activity.userName}</td>
+                      <td className="px-8 py-4">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-400/5 px-2.5 py-1 rounded-md">{activity.department}</span>
+                      </td>
+                      <td className="px-8 py-4">
+                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                          activity.action === 'Login' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                          activity.action === 'Submission' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                          activity.action === 'Approval' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                          activity.action === 'Rejection' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                        }`}>
+                          {activity.action}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 text-sm font-medium text-slate-300 max-w-xs truncate">{activity.description}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+            {activities.length === 0 && (
+              <div className="text-center py-12 text-slate-500 text-xs uppercase tracking-[0.2em] font-black">No activity recorded</div>
+            )}
+          </div>
+        </div>
       )
       }
 
