@@ -2,251 +2,293 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const session = require('express-session');
+const Database = require('better-sqlite3');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow any 192.168.x.x origin or localhost for local network access
-        if (!origin || origin.startsWith('http://localhost') || /^http:\/\/192\.168\.\d+\.\d+(:3000)?$/.test(origin)) {
-            callback(null, true);
-        } else {
-            console.log("CORS blocked origin:", origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: IS_PRODUCTION ? ['https://your-domain.com', 'http://your-domain.com'] : true,
     credentials: true
 }));
 app.use(express.json());
-app.use(session({
-    secret: 'desicrew-audit-secret-2026',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false, // set to true in production with HTTPS
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+
+const DB_FILE = path.join(__dirname, 'audit.db');
+
+const db = new Database(DB_FILE);
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        role TEXT NOT NULL,
+        department TEXT NOT NULL,
+        isActive INTEGER DEFAULT 1,
+        password TEXT NOT NULL,
+        isLocked INTEGER DEFAULT 0,
+        loginAttempts INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS evidence (
+        id TEXT PRIMARY KEY,
+        userId TEXT,
+        userName TEXT,
+        department TEXT,
+        checklistId TEXT,
+        description TEXT,
+        fileName TEXT,
+        fileType TEXT,
+        submittedAt TEXT,
+        status TEXT DEFAULT 'Pending'
+    );
+    CREATE TABLE IF NOT EXISTS dmax (
+        id TEXT PRIMARY KEY,
+        ticketId TEXT,
+        department TEXT,
+        description TEXT,
+        severity TEXT,
+        reportedBy TEXT,
+        reportedAt TEXT,
+        status TEXT DEFAULT 'Open',
+        assignedTo TEXT,
+        resolvedAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS activity (
+        id TEXT PRIMARY KEY,
+        userId TEXT,
+        userName TEXT,
+        department TEXT,
+        action TEXT,
+        description TEXT,
+        timestamp TEXT
+    );
+    CREATE TABLE IF NOT EXISTS checklists (
+        id TEXT PRIMARY KEY,
+        department TEXT NOT NULL,
+        task TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS tokens (
+        token TEXT PRIMARY KEY,
+        userId TEXT,
+        expiresAt INTEGER
+    );
+`);
+
+function initDefaults() {
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
+    if (userCount.count === 0) {
+        const defaultUsers = [
+            { id: 'u1', name: 'System Admin', email: 'admin@desicrew.in', role: 'Super Admin', department: 'Admin', isActive: 1, password: bcrypt.hashSync('password123', 10), isLocked: 0, loginAttempts: 0 },
+            { id: '9ykf4mwwi', name: 'Gowri Amutha', email: 'gowriamutha@desicrew.in', role: 'Super Admin', department: 'IT', isActive: 1, password: bcrypt.hashSync('Desicrew@2026', 10), isLocked: 0, loginAttempts: 0 },
+            { id: '011egr9ah', name: 'test', email: 'test@desicrew.in', role: 'Contributor', department: 'Operations', isActive: 1, password: bcrypt.hashSync('123', 10), isLocked: 0, loginAttempts: 0 }
+        ];
+        const insertUser = db.prepare('INSERT INTO users (id, name, email, role, department, isActive, password, isLocked, loginAttempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        defaultUsers.forEach(u => insertUser.run(u.id, u.name, u.email, u.role, u.department, u.isActive, u.password, u.isLocked, u.loginAttempts));
     }
-}));
 
-const DB_FILE = path.join(__dirname, 'db.json');
-
-// Initialize DB with default data if not exists
-const DEFAULTS = {
-    users: [
-        {
-            id: "u1",
-            name: "System Admin",
-            email: "admin@desicrew.in",
-            role: "Super Admin",
-            department: "Admin",
-            isActive: true,
-            password: "password123",
-            isLocked: false,
-            loginAttempts: 0
-        }
-    ],
-    evidence: [],
-    dmax: [],
-    activity: [],
-    checklists: [
-        { id: 'hr1', department: 'HR', task: 'Monthly Payroll Register Approval' },
-        { id: 'hr2', department: 'HR', task: 'New Hire Documentation Completion' },
-        { id: 'hr3', department: 'HR', task: 'Statutory Compliance (PF/ESI) Filing' },
-        { id: 'it1', department: 'IT', task: 'Server Patch Management Log' },
-        { id: 'it2', department: 'IT', task: 'Access Review Audit Trail' },
-        { id: 'it3', department: 'IT', task: 'Backup & Disaster Recovery Test' },
-        { id: 'op1', department: 'Operations', task: 'Daily Output Verification' },
-        { id: 'op2', department: 'Operations', task: 'Quality Assurance Sample Test' },
-        { id: 'op3', department: 'Operations', task: 'Shift Handover Documentation' }
-    ]
-};
-
-function readDb() {
-    if (!fs.existsSync(DB_FILE)) {
-        fs.writeFileSync(DB_FILE, JSON.stringify(DEFAULTS, null, 2));
-        return JSON.parse(JSON.stringify(DEFAULTS));
+    const checklistCount = db.prepare('SELECT COUNT(*) as count FROM checklists').get();
+    if (checklistCount.count === 0) {
+        const checklists = [
+            { id: 'hr1', department: 'HR', task: 'Monthly Payroll Register Approval' },
+            { id: 'hr2', department: 'HR', task: 'New Hire Documentation Completion' },
+            { id: 'hr3', department: 'HR', task: 'Statutory Compliance (PF/ESI) Filing' },
+            { id: 'it1', department: 'IT', task: 'Server Patch Management Log' },
+            { id: 'it2', department: 'IT', task: 'Access Review Audit Trail' },
+            { id: 'it3', department: 'IT', task: 'Backup & Disaster Recovery Test' },
+            { id: 'op1', department: 'Operations', task: 'Daily Output Verification' },
+            { id: 'op2', department: 'Operations', task: 'Quality Assurance Sample Test' },
+            { id: 'op3', department: 'Operations', task: 'Shift Handover Documentation' }
+        ];
+        const insertChecklist = db.prepare('INSERT INTO checklists (id, department, task) VALUES (?, ?, ?)');
+        checklists.forEach(c => insertChecklist.run(c.id, c.department, c.task));
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+}
+initDefaults();
+
+function generateToken() {
+    return crypto.randomBytes(32).toString('hex');
 }
 
-function writeDb(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+// Auth middleware
+function authMiddleware(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const token = authHeader.split(' ')[1];
+    const tokenData = db.prepare('SELECT * FROM tokens WHERE token = ?').get(token);
+    if (!tokenData) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (tokenData.expiresAt < Date.now()) {
+        db.prepare('DELETE FROM tokens WHERE token = ?').run(token);
+        return res.status(401).json({ error: 'Token expired' });
+    }
+    const user = db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users WHERE id = ?').get(tokenData.userId);
+    if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+    }
+    req.user = user;
+    req.token = token;
+    next();
 }
 
 // --- AUTH Endpoints ---
 
-// Login
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    const db = readDb();
-    const user = db.users.find(u => u.email.toLowerCase().trim() === email.toLowerCase().trim());
+    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email.trim());
 
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     if (!user.isActive) return res.status(403).json({ error: 'Account disabled. Contact Super Admin.' });
     if (user.isLocked) return res.status(403).json({ error: 'Account locked. Contact Super Admin.' });
 
-    const storedPwd = (user.password || 'password123').trim();
-    const providedPwd = (password || '').trim();
-
-    if (providedPwd !== storedPwd) {
-        console.log(`[AUTH] Failed login for ${email}. Provided: "${providedPwd}", Stored: "${storedPwd}"`);
+    const passwordMatch = bcrypt.compareSync(password.trim(), user.password);
+    
+    if (!passwordMatch) {
+        console.log(`[AUTH] Failed login for ${email}`);
         const attempts = (user.loginAttempts || 0) + 1;
-        const idx = db.users.findIndex(u => u.id === user.id);
-        db.users[idx].loginAttempts = attempts;
+        db.prepare('UPDATE users SET loginAttempts = ? WHERE id = ?').run(attempts, user.id);
         if (attempts >= 3) {
-            db.users[idx].isLocked = true;
-            writeDb(db);
+            db.prepare('UPDATE users SET isLocked = 1 WHERE id = ?').run(user.id);
             return res.status(403).json({ error: 'Too many failed attempts. Account locked.' });
         }
-        writeDb(db);
         return res.status(401).json({ error: `Invalid password. ${3 - attempts} attempts remaining.` });
     }
 
     console.log(`[AUTH] Successful login for ${email}`);
+    db.prepare('UPDATE users SET loginAttempts = 0 WHERE id = ?').run(user.id);
 
-    // Reset login attempts on success
-    const idx = db.users.findIndex(u => u.id === user.id);
-    db.users[idx].loginAttempts = 0;
-    writeDb(db);
+    const token = generateToken();
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+    db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
 
-    // Store user in session (never store password in session)
-    const { password: _pw, ...safeUser } = db.users[idx];
-    req.session.userId = safeUser.id;
-    req.session.user = safeUser;
-
-    res.json({ success: true, user: safeUser });
-});
-
-// Get current session user
-app.get('/api/auth/me', (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
-    // Always re-read from DB to get latest user state
-    const db = readDb();
-    const user = db.users.find(u => u.id === req.session.userId);
-    if (!user) return res.status(401).json({ error: 'Session invalid' });
     const { password: _pw, ...safeUser } = user;
-    req.session.user = safeUser; // refresh session
-    res.json({ user: safeUser });
+    res.json({ success: true, token, user: safeUser });
 });
 
-// Logout
-app.post('/api/auth/logout', (req, res) => {
-    req.session.destroy(() => {
-        res.json({ success: true });
-    });
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+    res.json({ user: req.user });
 });
 
-// Serve static files from the 'dist' directory
+app.post('/api/auth/logout', authMiddleware, (req, res) => {
+    db.prepare('DELETE FROM tokens WHERE token = ?').run(req.token);
+    res.json({ success: true });
+});
+
+// Serve static files
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // --- API Endpoints ---
 
-// Get all data (for initialization)
 app.get('/api/data', (req, res) => {
-    const db = readDb();
-    // Never send passwords to frontend
-    const safeUsers = db.users.map(({ password, ...u }) => u);
-    res.json({ ...db, users: safeUsers });
+    const users = db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users').all();
+    const evidence = db.prepare('SELECT * FROM evidence').all();
+    const dmax = db.prepare('SELECT * FROM dmax').all();
+    const activity = db.prepare('SELECT * FROM activity ORDER BY timestamp DESC LIMIT 1000').all();
+    const checklists = db.prepare('SELECT * FROM checklists').all();
+    res.json({ users, evidence, dmax, activity, checklists });
 });
 
-// USERS
-app.post('/api/users', (req, res) => {
-    const db = readDb();
+app.post('/api/users', authMiddleware, (req, res) => {
     const newUser = req.body;
-    if (db.users.find(u => u.email === newUser.email)) {
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(newUser.email);
+    if (existing) {
         return res.status(400).json({ error: 'User already exists' });
     }
-    db.users.push(newUser);
-    writeDb(db);
+    const hashedPassword = bcrypt.hashSync(newUser.password, 10);
+    db.prepare('INSERT INTO users (id, name, email, role, department, isActive, password, isLocked, loginAttempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(newUser.id, newUser.name, newUser.email, newUser.role, newUser.department, newUser.isActive !== false ? 1 : 0, hashedPassword, 0, 0);
     const { password: _pw, ...safeUser } = newUser;
     res.json({ success: true, user: safeUser });
 });
 
-app.put('/api/users/:id', (req, res) => {
-    const db = readDb();
+app.put('/api/users/:id', authMiddleware, (req, res) => {
     const { id } = req.params;
     const updates = req.body;
-    const idx = db.users.findIndex(u => u.id === id);
-    if (idx !== -1) {
-        db.users[idx] = { ...db.users[idx], ...updates };
-        writeDb(db);
-        const { password: _pw, ...safeUser } = db.users[idx];
-        res.json({ success: true, user: safeUser });
-    } else {
-        res.status(404).json({ error: 'User not found' });
+    const fields = [];
+    const values = [];
+    if (updates.name) { fields.push('name = ?'); values.push(updates.name); }
+    if (updates.email) { fields.push('email = ?'); values.push(updates.email); }
+    if (updates.role) { fields.push('role = ?'); values.push(updates.role); }
+    if (updates.department) { fields.push('department = ?'); values.push(updates.department); }
+    if (updates.isActive !== undefined) { fields.push('isActive = ?'); values.push(updates.isActive ? 1 : 0); }
+    if (updates.password) { 
+        fields.push('password = ?'); 
+        values.push(bcrypt.hashSync(updates.password, 10)); 
     }
+    if (updates.isLocked !== undefined) { fields.push('isLocked = ?'); values.push(updates.isLocked ? 1 : 0); }
+    
+    if (fields.length > 0) {
+        values.push(id);
+        db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    }
+    const user = db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users WHERE id = ?').get(id);
+    res.json({ success: true, user });
 });
 
-// ACTIVITIES
 app.post('/api/activity', (req, res) => {
-    const db = readDb();
     const newActivity = req.body;
-    db.activity.unshift(newActivity);
-    if (db.activity.length > 1000) db.activity = db.activity.slice(0, 1000);
-    writeDb(db);
+    db.prepare('INSERT INTO activity (id, userId, userName, department, action, description, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)').run(newActivity.id, newActivity.userId, newActivity.userName, newActivity.department, newActivity.action, newActivity.description, newActivity.timestamp);
     res.json({ success: true });
 });
 
-// CHECKLISTS
-app.post('/api/checklists', (req, res) => {
-    const db = readDb();
-    db.checklists.push(req.body);
-    writeDb(db);
+app.post('/api/checklists', authMiddleware, (req, res) => {
+    const checklist = req.body;
+    db.prepare('INSERT INTO checklists (id, department, task) VALUES (?, ?, ?)').run(checklist.id, checklist.department, checklist.task);
     res.json({ success: true });
 });
 
-app.delete('/api/checklists/:id', (req, res) => {
-    const db = readDb();
-    db.checklists = db.checklists.filter(c => c.id !== req.params.id);
-    writeDb(db);
+app.delete('/api/checklists/:id', authMiddleware, (req, res) => {
+    db.prepare('DELETE FROM checklists WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
 
-// EVIDENCE
-app.post('/api/evidence', (req, res) => {
-    const db = readDb();
-    db.evidence.push(req.body);
-    writeDb(db);
+app.post('/api/evidence', authMiddleware, (req, res) => {
+    const evidence = req.body;
+    db.prepare('INSERT INTO evidence (id, userId, userName, department, checklistId, description, fileName, fileType, submittedAt, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(evidence.id, evidence.userId, evidence.userName, evidence.department, evidence.checklistId, evidence.description, evidence.fileName, evidence.fileType, evidence.submittedAt, evidence.status || 'Pending');
     res.json({ success: true });
 });
 
-app.put('/api/evidence/:id', (req, res) => {
-    const db = readDb();
-    const idx = db.evidence.findIndex(e => e.id === req.params.id);
-    if (idx !== -1) {
-        db.evidence[idx] = { ...db.evidence[idx], ...req.body };
-        writeDb(db);
-        res.json({ success: true });
-    } else {
-        res.status(404).json({ error: 'Evidence not found' });
+app.put('/api/evidence/:id', authMiddleware, (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+    const fields = [];
+    const values = [];
+    if (updates.status) { fields.push('status = ?'); values.push(updates.status); }
+    if (updates.description) { fields.push('description = ?'); values.push(updates.description); }
+    if (fields.length > 0) {
+        values.push(id);
+        db.prepare(`UPDATE evidence SET ${fields.join(', ')} WHERE id = ?`).run(...values);
     }
-});
-
-// DMAX
-app.post('/api/dmax', (req, res) => {
-    const db = readDb();
-    db.dmax.push(req.body);
-    writeDb(db);
     res.json({ success: true });
 });
 
-app.put('/api/dmax/:id', (req, res) => {
-    const db = readDb();
-    const idx = db.dmax.findIndex(d => d.id === req.params.id);
-    if (idx !== -1) {
-        db.dmax[idx] = { ...db.dmax[idx], ...req.body };
-        writeDb(db);
-        res.json({ success: true });
-    } else {
-        res.status(404).json({ error: 'Report not found' });
-    }
+app.post('/api/dmax', authMiddleware, (req, res) => {
+    const dmax = req.body;
+    db.prepare('INSERT INTO dmax (id, ticketId, department, description, severity, reportedBy, reportedAt, status, assignedTo, resolvedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(dmax.id, dmax.ticketId, dmax.department, dmax.description, dmax.severity, dmax.reportedBy, dmax.reportedAt, dmax.status || 'Open', dmax.assignedTo || null, dmax.resolvedAt || null);
+    res.json({ success: true });
 });
 
-// Catch-all to serve index.html for SPA
+app.put('/api/dmax/:id', authMiddleware, (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+    const fields = [];
+    const values = [];
+    if (updates.status) { fields.push('status = ?'); values.push(updates.status); }
+    if (updates.assignedTo) { fields.push('assignedTo = ?'); values.push(updates.assignedTo); }
+    if (updates.resolvedAt) { fields.push('resolvedAt = ?'); values.push(updates.resolvedAt); }
+    if (fields.length > 0) {
+        values.push(id);
+        db.prepare(`UPDATE dmax SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    }
+    res.json({ success: true });
+});
+
+// Catch-all
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
