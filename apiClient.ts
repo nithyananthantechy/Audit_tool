@@ -1,6 +1,13 @@
 import { User, ActivityLog, ChecklistItem, Evidence, DMAXReport } from './types';
 
-const API_Base = '/api';
+const API_Base = getApiBaseUrl();
+
+function getApiBaseUrl(): string {
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
+    }
+    return '/api';
+}
 
 let authToken: string | null = null;
 
@@ -23,11 +30,13 @@ export function getAuthToken(): string | null {
 const fetchJSON = async (url: string, options: RequestInit = {}) => {
     const token = getAuthToken();
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
+        'Content-Type': 'application/json'
     };
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (options.headers && typeof options.headers === 'object') {
+        Object.assign(headers, options.headers);
     }
     
     const res = await fetch(url, {
