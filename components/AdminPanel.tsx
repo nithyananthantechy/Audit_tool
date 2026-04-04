@@ -197,12 +197,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                       </span>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <button
-                        onClick={() => { setEditingUser(u); setFormData({ name: u.name, email: u.email, role: u.role, department: u.department, isActive: u.isActive, isLocked: u.isLocked, loginAttempts: u.loginAttempts, password: u.password }); setIsModalOpen(true); }}
-                        className="text-[10px] font-black text-blue-400 hover:text-white hover:bg-blue-600 px-4 py-2 rounded-xl transition-all border border-blue-500/20 uppercase tracking-widest"
-                      >
-                        Modify Permissions
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => { setEditingUser(u); setFormData({ name: u.name, email: u.email, role: u.role, department: u.department, isActive: u.isActive, isLocked: u.isLocked, loginAttempts: u.loginAttempts, password: u.password }); setIsModalOpen(true); }}
+                          className="text-[10px] font-black text-blue-400 hover:text-white hover:bg-blue-600 px-4 py-2 rounded-xl transition-all border border-blue-500/20 uppercase tracking-widest"
+                        >
+                          Modify Permissions
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (u.id === user.id) {
+                              alert('You cannot delete your own account.');
+                              return;
+                            }
+                            if (confirm(`Are you sure you want to permanently delete "${u.name}"? This action cannot be undone.`)) {
+                              setUsers(prev => prev.filter(existing => existing.id !== u.id));
+                              try {
+                                await api.deleteUser(u.id);
+                                logActivity(user, ActivityType.SYSTEM, `Permanently deleted user: ${u.name} (${u.email})`);
+                              } catch (e: any) {
+                                console.error(e);
+                                alert(`Failed to delete user: ${e.message || 'Server error'}`);
+                                setUsers(prev => [...prev, u]);
+                              }
+                            }
+                          }}
+                          className="text-[10px] font-black text-red-400 hover:text-white hover:bg-red-600 px-4 py-2 rounded-xl transition-all border border-red-500/20 uppercase tracking-widest"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

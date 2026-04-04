@@ -138,37 +138,42 @@ function authMiddleware(req, res, next) {
 // --- AUTH Endpoints ---
 
 app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
-    const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email.trim());
+        const user = db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email.trim());
 
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!user.isActive) return res.status(403).json({ error: 'Account disabled. Contact Super Admin.' });
-    if (user.isLocked) return res.status(403).json({ error: 'Account locked. Contact Super Admin.' });
+        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!user.isActive) return res.status(403).json({ error: 'Account disabled. Contact Super Admin.' });
+        if (user.isLocked) return res.status(403).json({ error: 'Account locked. Contact Super Admin.' });
 
-    const passwordMatch = bcrypt.compareSync(password.trim(), user.password);
-    
-    if (!passwordMatch) {
-        console.log(`[AUTH] Failed login for ${email}`);
-        const attempts = (user.loginAttempts || 0) + 1;
-        db.prepare('UPDATE users SET loginAttempts = ? WHERE id = ?').run(attempts, user.id);
-        if (attempts >= 3) {
-            db.prepare('UPDATE users SET isLocked = 1 WHERE id = ?').run(user.id);
-            return res.status(403).json({ error: 'Too many failed attempts. Account locked.' });
+        const passwordMatch = bcrypt.compareSync(password.trim(), user.password);
+        
+        if (!passwordMatch) {
+            console.log(`[AUTH] Failed login for ${email}`);
+            const attempts = (user.loginAttempts || 0) + 1;
+            db.prepare('UPDATE users SET loginAttempts = ? WHERE id = ?').run(attempts, user.id);
+            if (attempts >= 3) {
+                db.prepare('UPDATE users SET isLocked = 1 WHERE id = ?').run(user.id);
+                return res.status(403).json({ error: 'Too many failed attempts. Account locked.' });
+            }
+            return res.status(401).json({ error: `Invalid password. ${3 - attempts} attempts remaining.` });
         }
-        return res.status(401).json({ error: `Invalid password. ${3 - attempts} attempts remaining.` });
+
+        console.log(`[AUTH] Successful login for ${email}`);
+        db.prepare('UPDATE users SET loginAttempts = 0 WHERE id = ?').run(user.id);
+
+        const token = generateToken();
+        const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+        db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
+
+        const { password: _pw, ...safeUser } = user;
+        res.json({ success: true, token, user: safeUser });
+    } catch (err) {
+        console.error('[AUTH ERROR]', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    console.log(`[AUTH] Successful login for ${email}`);
-    db.prepare('UPDATE users SET loginAttempts = 0 WHERE id = ?').run(user.id);
-
-    const token = generateToken();
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-    db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
-
-    const { password: _pw, ...safeUser } = user;
-    res.json({ success: true, token, user: safeUser });
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
@@ -204,6 +209,14 @@ app.post('/api/users', authMiddleware, (req, res) => {
     db.prepare('INSERT INTO users (id, name, email, role, department, isActive, password, isLocked, loginAttempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(newUser.id, newUser.name, newUser.email, newUser.role, newUser.department, newUser.isActive !== false ? 1 : 0, hashedPassword, 0, 0);
     const { password: _pw, ...safeUser } = newUser;
     res.json({ success: true, user: safeUser });
+});
+
+app.delete('/api/users/:id', authMiddleware, (req, res) => {
+    const { id } = req.params;
+    const user = db.prepare('SELECT id, name, email, role FROM users WHERE id = ?').get(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    res.json({ success: true, user });
 });
 
 app.put('/api/users/:id', authMiddleware, (req, res) => {
@@ -293,6 +306,18 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-app.listen(PORT, () => {
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+});
+
+server.on('error', (err) => {
+    console.error('[SERVER ERROR]', err);
 });

@@ -83,6 +83,12 @@ export const api = {
         });
     },
 
+    deleteUser: async (userId: string) => {
+        return fetchJSON(`${API_Base}/users/${userId}`, {
+            method: 'DELETE'
+        });
+    },
+
     logActivity: async (activity: ActivityLog) => {
         return fetchJSON(`${API_Base}/activity`, {
             method: 'POST',
