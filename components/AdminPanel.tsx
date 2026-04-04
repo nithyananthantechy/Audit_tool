@@ -185,7 +185,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                       <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5 bg-white/[0.03] text-slate-400`}>
                         {u.role}
                       </span>
-                      {u.isLocked && (
+                      {u.isLocked === 1 && (
                         <span className="ml-2 px-3 py-1.5 bg-red-500/10 text-red-500 text-[9px] font-black rounded-full uppercase tracking-widest border border-red-500/20 animate-pulse">
                           Node Locked
                         </span>
