@@ -236,9 +236,15 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col">
           {currentUser && <Header user={currentUser} onUpdateProfile={handleUpdateProfile} onLogout={handleLogout} />}
           <main className="flex-1 p-6 overflow-y-auto">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto min-h-full pb-8">
               {renderContent()}
             </div>
+            
+            <footer className="w-full text-center py-6 mt-auto border-t border-white/5 bg-slate-950/50 backdrop-blur-md">
+              <p className="text-xs text-slate-500 font-medium tracking-wide">
+                All rights have been reserved by <span className="font-bold text-blue-500">NITECHSPARK</span> &copy; {new Date().getFullYear()}
+              </p>
+            </footer>
           </main>
         </div>
       </div>

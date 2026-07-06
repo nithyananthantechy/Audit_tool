@@ -28,7 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
   }, [user]);
 
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-  const hasSubmittedCapa = capa.some(r => r.userId === user.id && r.month === currentMonth);
+  const hasSubmittedEvidence = evidence.some(e => e.userId === user.id && new Date(e.submittedAt).toLocaleString('default', { month: 'long' }) === currentMonth);
 
   const myEvidence = (user.role === Role.MANAGER || user.role === Role.HR)
     ? evidence.filter(e => e.department === user.department)
@@ -68,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
           <h1 className="text-4xl font-black text-white tracking-tight leading-tight">Welcome, <span className="text-blue-500">{user.name.split(' ')[0]}</span></h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">{user.department} Workspace &bull; {user.role}</p>
         </div>
-        {user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN && !hasSubmittedCapa && (
+        {user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN && !hasSubmittedEvidence && (
           <div className="bg-blue-600/10 backdrop-blur-xl border border-blue-500/20 p-5 rounded-[32px] flex items-center gap-5 shadow-2xl animate-bounce-subtle">
             <div className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30">
               <AlertTriangle size={20} />
@@ -77,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
               <p className="text-sm font-black text-white uppercase tracking-wider">Compliance Missing: {currentMonth}</p>
               <p className="text-[11px] text-slate-400 font-medium leading-relaxed">Your monthly health report is required for organization auditing.</p>
             </div>
-            <button onClick={() => setActiveTab && setActiveTab('capa')} className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">
+            <button onClick={() => setActiveTab && setActiveTab('checklists')} className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">
               Upload Now <ChevronRight size={14} />
             </button>
           </div>
