@@ -85,6 +85,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 
 const app = express();
+app.set('trust proxy', 1); // Trust Render's proxy to get real user IP
 
 const rateLimitStore = new Map();
 const RATE_LIMIT = 100;
@@ -109,7 +110,7 @@ async function rateLimitMiddleware(req, res, next) {
   next();
 }
 
-app.use(rateLimitMiddleware);
+app.use('/api', rateLimitMiddleware);
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
