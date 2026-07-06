@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { User, Role, Department, Evidence, DMAXReport, AuditStatus, ActivityLog, ActivityType, ChecklistItem } from './types';
+import { User, Role, Department, Evidence, CAPAReport, AuditStatus, ActivityLog, ActivityType, ChecklistItem } from './types';
 import { APP_NAME, DEPARTMENT_CHECKLISTS } from './constants';
 import { api } from './apiClient';
 import Sidebar from './components/Sidebar';
@@ -10,7 +10,8 @@ import ChecklistSubmission from './components/ChecklistSubmission';
 import ManagerApproval from './components/ManagerApproval';
 import CEOView from './components/CEOView';
 import AdminPanel from './components/AdminPanel';
-import DMAXModule from './components/DMAXModule';
+import CAPAModule from './components/CAPAModule';
+import DepartmentHub from './components/DepartmentHub';
 import LoginPage from './components/LoginPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import LandingPage from './components/LandingPage';
@@ -20,7 +21,7 @@ const App: React.FC = () => {
   const [loginState, setLoginState] = useState<'checking' | 'landing' | 'login' | 'welcome' | 'active'>('checking');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evidenceStore, setEvidenceStore] = useState<Evidence[]>([]);
-  const [dmaxStore, setDmaxStore] = useState<DMAXReport[]>([]);
+  const [capaStore, setCapaStore] = useState<CAPAReport[]>([]);
   const [userStore, setUserStore] = useState<User[]>([]);
   const [activityStore, setActivityStore] = useState<ActivityLog[]>([]);
   const [checklistStore, setChecklistStore] = useState<ChecklistItem[]>(DEPARTMENT_CHECKLISTS);
@@ -35,7 +36,7 @@ const App: React.FC = () => {
       const data = await api.getData();
       if (data.users) setUserStore(data.users);
       if (data.evidence) setEvidenceStore(data.evidence);
-      if (data.dmax) setDmaxStore(data.dmax);
+      if (data.capa) setCapaStore(data.capa);
       if (data.activity) setActivityStore(data.activity);
       if (data.checklists) setChecklistStore(data.checklists);
     } catch (error) {
@@ -126,8 +127,8 @@ const App: React.FC = () => {
         }, 2000);
         return { success: true };
       }
-    } catch (err) {
-      return { success: false, error: 'Login failed. Please check your connection.' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Login failed. Please check your connection.' };
     }
     return { success: false, error: 'Unknown authentication error.' };
   };
@@ -161,7 +162,7 @@ const App: React.FC = () => {
     setLoginState('landing');
     setCurrentUser(null);
     setEvidenceStore([]);
-    setDmaxStore([]);
+    setCapaStore([]);
     setUserStore([]);
     setActivityStore([]);
   };
@@ -197,19 +198,21 @@ const App: React.FC = () => {
     if (!currentUser) return null;
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard user={currentUser} evidence={evidenceStore} dmax={dmaxStore} checklists={checklistStore} users={userStore} />;
+        return <Dashboard user={currentUser} evidence={evidenceStore} capa={capaStore} checklists={checklistStore} users={userStore} setActiveTab={setActiveTab} />;
+      case 'dept_hub':
+        return <DepartmentHub user={currentUser} />;
       case 'checklists':
         return <ChecklistSubmission user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} logActivity={logActivity} checklists={checklistStore} />;
-      case 'dmax':
-        return <DMAXModule user={currentUser} reports={dmaxStore} setReports={setDmaxStore} logActivity={logActivity} />;
+      case 'capa':
+        return <CAPAModule user={currentUser} reports={capaStore} setReports={setCapaStore} logActivity={logActivity} />;
       case 'approvals':
-        return <ManagerApproval user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} dmax={dmaxStore} setDmax={setDmaxStore} logActivity={logActivity} />;
+        return <ManagerApproval user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} capa={capaStore} setCapa={setCapaStore} logActivity={logActivity} />;
       case 'executive':
-        return <CEOView evidence={evidenceStore} dmax={dmaxStore} setEvidence={setEvidenceStore} setDmax={setDmaxStore} user={currentUser} logActivity={logActivity} />;
+        return <CEOView evidence={evidenceStore} capa={capaStore} setEvidence={setEvidenceStore} setCapa={setCapaStore} user={currentUser} logActivity={logActivity} />;
       case 'admin':
-        return <AdminPanel dmax={dmaxStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} checklists={checklistStore} setChecklists={setChecklistStore} />;
+        return <AdminPanel capa={capaStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} checklists={checklistStore} setChecklists={setChecklistStore} />;
       default:
-        return <Dashboard user={currentUser} evidence={evidenceStore} dmax={dmaxStore} checklists={checklistStore} users={userStore} />;
+        return <Dashboard user={currentUser} evidence={evidenceStore} capa={capaStore} checklists={checklistStore} users={userStore} setActiveTab={setActiveTab} />;
     }
   };
 
@@ -224,6 +227,7 @@ const App: React.FC = () => {
         {currentUser && (
           <Sidebar
             role={currentUser.role}
+            department={currentUser.department}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onLogout={handleLogout}

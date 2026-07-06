@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DESICREW_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
+import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
 import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface LoginProps {
@@ -45,11 +45,11 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="relative z-10 space-y-6">
               <div className="animate-in slide-in-from-top-4 duration-500">
                 <img
-                  src={DESICREW_LOGO}
+                  src={NITECHSPARK_LOGO}
                   alt={`${COMPANY_NAME} Logo`}
-                  className="h-12 w-auto object-contain block mx-auto filter brightness-0 invert opacity-90"
+                  className="h-24 w-auto object-contain block mx-auto mix-blend-screen scale-110"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x60?text=DesiCrew';
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x60?text=NITECHSPARK';
                   }}
                 />
               </div>
@@ -139,6 +139,9 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/10">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Secure Node 2.5 Active</span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-[9px] text-slate-500 font-medium text-center uppercase tracking-widest block">&copy; 2026 All rights reserved by NITECHSPARK</span>
                 </div>
                 <p className="text-[9px] text-white/20 text-center leading-relaxed font-medium">
                   {COMPANY_NAME} &bull; Internal System &copy; {new Date().getFullYear()}<br />

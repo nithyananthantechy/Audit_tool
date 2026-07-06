@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '../types';
-import { DESICREW_LOGO, COMPANY_NAME } from '../constants';
+import { NITECHSPARK_LOGO, COMPANY_NAME } from '../constants';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
 interface WelcomeScreenProps {
@@ -19,9 +19,9 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ user }) => {
       <div className="relative z-10 mb-12 animate-in fade-in zoom-in-95 duration-1000">
         <div className="inline-block p-2 animate-bounce">
           <img
-            src={DESICREW_LOGO}
+            src={NITECHSPARK_LOGO}
             alt={`${COMPANY_NAME} Logo`}
-            className="h-16 w-auto object-contain filter brightness-0 invert opacity-90"
+            className="h-24 w-auto object-contain mix-blend-screen scale-110"
           />
         </div>
       </div>

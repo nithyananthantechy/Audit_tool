@@ -1,23 +1,23 @@
 
 import React, { useState } from 'react';
 /* Fix: Added User and ActivityType to the imports */
-import { Evidence, DMAXReport, AuditStatus, Department, Role, User, ActivityType } from '../types';
+import { Evidence, CAPAReport, AuditStatus, Department, Role, User, ActivityType } from '../types';
 import { STATUS_COLORS } from '../constants';
 import { Download, Filter, ShieldCheck, CheckCircle, Clock, FileText, ChevronDown, ListChecks, ShieldAlert } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface CEOViewProps {
   evidence: Evidence[];
-  dmax: DMAXReport[];
+  capa: CAPAReport[];
   setEvidence: React.Dispatch<React.SetStateAction<Evidence[]>>;
-  setDmax: React.Dispatch<React.SetStateAction<DMAXReport[]>>;
+  setCapa: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
   user: User;
   logActivity: (user: User, action: ActivityType, description: string) => void;
 }
 
-const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax, user, logActivity }) => {
+const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa, user, logActivity }) => {
   const [filterDept, setFilterDept] = useState<Department | 'All'>('All');
-  const [activeReportTab, setActiveReportTab] = useState<'evidence' | 'dmax'>('evidence');
+  const [activeReportTab, setActiveReportTab] = useState<'evidence' | 'capa'>('evidence');
 
   if (user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN) {
     return (
@@ -30,16 +30,16 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax,
   }
 
   const filteredEvidence = filterDept === 'All' ? evidence : evidence.filter(e => e.department === filterDept);
-  const filteredDmax = filterDept === 'All' ? dmax : dmax.filter(d => d.department === filterDept);
+  const filteredCapa = filterDept === 'All' ? capa : capa.filter(d => d.department === filterDept);
 
   const handleFinalAuditEvidence = (id: string) => {
     setEvidence(prev => prev.map(e => e.id === id ? { ...e, status: AuditStatus.FINAL_AUDIT_COMPLETED } : e));
     logActivity(user, ActivityType.APPROVAL, `External Auditor performed final sign-off for checklist item ID: ${id}`);
   };
 
-  const handleFinalAuditDmax = (id: string) => {
-    setDmax(prev => prev.map(d => d.id === id ? { ...d, status: AuditStatus.FINAL_AUDIT_COMPLETED } : d));
-    logActivity(user, ActivityType.APPROVAL, `External Auditor certified DMAX report ID: ${id}`);
+  const handleFinalAuditCapa = (id: string) => {
+    setCapa(prev => prev.map(d => d.id === id ? { ...d, status: AuditStatus.FINAL_AUDIT_COMPLETED } : d));
+    logActivity(user, ActivityType.APPROVAL, `External Auditor certified CAPA report ID: ${id}`);
   };
 
   return (
@@ -69,10 +69,10 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax,
               <ListChecks size={16} /> Compliance Audit
             </button>
             <button
-              onClick={() => setActiveReportTab('dmax')}
-              className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeReportTab === 'dmax' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+              onClick={() => setActiveReportTab('capa')}
+              className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeReportTab === 'capa' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
             >
-              <FileText size={16} /> DMAX Ledger
+              <FileText size={16} /> CAPA Ledger
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -107,7 +107,7 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax,
                           {e.department.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{e.department} Audit Unit #{e.checklistItemId.slice(-4).toUpperCase()}</p>
+                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{e.department} Audit Unit #{(e.checklistItemId || '').slice(-4).toUpperCase()}</p>
                           <p className="text-[10px] text-slate-500 font-medium mt-1 italic leading-relaxed max-w-md">"{e.comment}"</p>
                         </div>
                       </div>
@@ -135,7 +135,7 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax,
                   </tr>
                 ))
               ) : (
-                filteredDmax.map(d => (
+                filteredCapa.map(d => (
                   <tr key={d.id} className="hover:bg-white/[0.01] transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
@@ -160,7 +160,7 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, dmax, setEvidence, setDmax,
                         </div>
                       ) : (
                         <button
-                          onClick={() => handleFinalAuditDmax(d.id)}
+                          onClick={() => handleFinalAuditCapa(d.id)}
                           disabled={d.status !== AuditStatus.MANAGER_APPROVED}
                           className="bg-white/5 text-white hover:bg-white/10 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] border border-white/10 disabled:opacity-20 transition-all"
                         >

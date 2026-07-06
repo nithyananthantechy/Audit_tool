@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, DMAXReport, Role, Department, ActivityLog, ActivityType, ChecklistItem } from '../types';
+import { User, CAPAReport, Role, Department, ActivityLog, ActivityType, ChecklistItem } from '../types';
 import {
   UserCog, UserPlus, ShieldAlert, Activity, BellRing, Mail, CheckCircle2,
   Search, Filter, X, Save, Power, PowerOff, ListRestart, History,
-  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2
+  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2, Download
 } from 'lucide-react';
 import { api } from '../apiClient';
 
 interface AdminPanelProps {
-  dmax: DMAXReport[];
+  capa: CAPAReport[];
   users: User[];
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   activities: ActivityLog[];
@@ -21,13 +21,15 @@ interface AdminPanelProps {
   setChecklists: React.Dispatch<React.SetStateAction<ChecklistItem[]>>;
 }
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activities, user, logActivity, onResetPassword, onToggleLock, checklists, setChecklists }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activities, user, logActivity, onResetPassword, onToggleLock, checklists, setChecklists }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'checklists'>('users');
   const [selectedDepartment, setSelectedDepartment] = useState<Department>(Department.HR);
   const [newTask, setNewTask] = useState('');
   const [reminderSent, setReminderSent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activitySearchTerm, setActivitySearchTerm] = useState('');
+  const [activityDeptFilter, setActivityDeptFilter] = useState('All');
+  const [activityActionFilter, setActivityActionFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -63,6 +65,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
   }, [users, editingUser, isModalOpen]);
 
   const currentMonth = "January";
+
+  const exportAuditTrail = () => {
+    const headers = ['Timestamp', 'User', 'Department', 'Action', 'Description'];
+    const filteredActivities = activities.filter(a => 
+      (activitySearchTerm === '' || a.userName.toLowerCase().includes(activitySearchTerm.toLowerCase()) || a.action.toLowerCase().includes(activitySearchTerm.toLowerCase()) || a.description.toLowerCase().includes(activitySearchTerm.toLowerCase())) &&
+      (activityDeptFilter === 'All' || a.department === activityDeptFilter) &&
+      (activityActionFilter === 'All' || a.action === activityActionFilter)
+    );
+    const csvData = filteredActivities.map(a => [
+      `"${a.timestamp}"`, `"${a.userName}"`, `"${a.department}"`, `"${a.action}"`, `"${a.description.replace(/"/g, '""')}"`
+    ].join(','));
+    const blob = new Blob([[headers.join(','), ...csvData].join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Audit_Trail_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
 
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,8 +345,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
         </div>
       ) : (
         <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl">
-          <div className="p-8 border-b border-white/5">
-            <div className="relative max-w-md">
+          <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
               <input
                 type="text"
@@ -335,6 +355,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                 onChange={e => setActivitySearchTerm(e.target.value)}
                 className="w-full bg-slate-950/40 border border-white/5 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-medium text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all placeholder:text-slate-700"
               />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <select 
+                value={activityDeptFilter} 
+                onChange={(e) => setActivityDeptFilter(e.target.value)} 
+                className="bg-slate-950/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                <option value="All">All Departments</option>
+                {Object.values(Department).map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <select 
+                value={activityActionFilter} 
+                onChange={(e) => setActivityActionFilter(e.target.value)} 
+                className="bg-slate-950/40 border border-white/5 rounded-xl px-4 py-3 text-sm font-medium text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                <option value="All">All Actions</option>
+                {Object.values(ActivityType).map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <button 
+                onClick={exportAuditTrail}
+                className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-white/10"
+              >
+                <Download size={16} /> Export CSV
+              </button>
             </div>
           </div>
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -351,12 +395,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
               <tbody className="divide-y divide-white/5">
                 {activities
                   .filter(a => 
-                    activitySearchTerm === '' ||
+                    (activitySearchTerm === '' ||
                     a.userName.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
                     a.action.toLowerCase().includes(activitySearchTerm.toLowerCase()) ||
-                    a.description.toLowerCase().includes(activitySearchTerm.toLowerCase())
+                    a.description.toLowerCase().includes(activitySearchTerm.toLowerCase())) &&
+                    (activityDeptFilter === 'All' || a.department === activityDeptFilter) &&
+                    (activityActionFilter === 'All' || a.action === activityActionFilter)
                   )
-                  .slice(0, 100)
+                  .slice(0, 500)
                   .map((activity) => (
                     <tr key={activity.id} className="hover:bg-white/[0.01] transition-colors">
                       <td className="px-8 py-4 text-[10px] font-medium text-slate-400">{activity.timestamp}</td>
@@ -418,7 +464,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ dmax, users, setUsers, activiti
                 </div>
                 <div className="space-y-3">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Corporate Node (Email)</label>
-                  <input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-800" placeholder="name@desicrew.in" />
+                  <input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-800" placeholder="name@nitechspark.com" />
                 </div>
                 <div className="space-y-3">
                   <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] pl-1">Operational Sector</label>

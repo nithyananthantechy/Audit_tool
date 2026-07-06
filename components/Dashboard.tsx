@@ -1,24 +1,34 @@
-
 import React from 'react';
-import { User, Evidence, DMAXReport, AuditStatus, Role, ChecklistItem } from '../types';
+import { User, Evidence, CAPAReport, AuditStatus, Role, ChecklistItem } from '../types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell, PieChart, Pie, Legend
 } from 'recharts';
 import { STATUS_COLORS } from '../constants';
-import { AlertTriangle, ChevronRight, FileText, CheckCircle2, Clock } from 'lucide-react';
+import { AlertTriangle, ChevronRight, FileText, CheckCircle2, Clock, Zap } from 'lucide-react';
+import { api } from '../apiClient';
 
 interface DashboardProps {
   user: User;
   evidence: Evidence[];
-  dmax: DMAXReport[];
+  capa: CAPAReport[];
   checklists: ChecklistItem[];
   users: User[];
+  setActiveTab?: (tab: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists, users }) => {
+const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists, users, setActiveTab }) => {
+  const [aiScore, setAiScore] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    const department = (user.role === Role.MANAGER || user.role === Role.HR) ? user.department : undefined;
+    api.getComplianceScore(department)
+      .then(data => setAiScore(data.score))
+      .catch(e => console.error('Failed to load compliance score:', e));
+  }, [user]);
+
   const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-  const hasSubmittedDmax = dmax.some(r => r.userId === user.id && r.month === currentMonth);
+  const hasSubmittedCapa = capa.some(r => r.userId === user.id && r.month === currentMonth);
 
   const myEvidence = (user.role === Role.MANAGER || user.role === Role.HR)
     ? evidence.filter(e => e.department === user.department)
@@ -58,7 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists,
           <h1 className="text-4xl font-black text-white tracking-tight leading-tight">Welcome, <span className="text-blue-500">{user.name.split(' ')[0]}</span></h1>
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">{user.department} Workspace &bull; {user.role}</p>
         </div>
-        {user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN && !hasSubmittedDmax && (
+        {user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN && !hasSubmittedCapa && (
           <div className="bg-blue-600/10 backdrop-blur-xl border border-blue-500/20 p-5 rounded-[32px] flex items-center gap-5 shadow-2xl animate-bounce-subtle">
             <div className="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30">
               <AlertTriangle size={20} />
@@ -67,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists,
               <p className="text-sm font-black text-white uppercase tracking-wider">Compliance Missing: {currentMonth}</p>
               <p className="text-[11px] text-slate-400 font-medium leading-relaxed">Your monthly health report is required for organization auditing.</p>
             </div>
-            <button className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">
+            <button onClick={() => setActiveTab && setActiveTab('capa')} className="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-500 transition-all shadow-xl shadow-blue-500/20">
               Upload Now <ChevronRight size={14} />
             </button>
           </div>
@@ -88,6 +98,25 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists,
           </div>
         ))}
       </div>
+
+      {/* AI Risk Score Widget */}
+      {aiScore !== null && (
+        <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 backdrop-blur-2xl p-6 rounded-[32px] border border-blue-500/30 flex items-center gap-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+            <Zap className="text-blue-400" size={32} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-black text-white tracking-tight">AI-Powered Compliance Score</h3>
+            <p className="text-xs text-slate-300 font-medium mt-1">Based on submission frequency and approval rates across the network.</p>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-black text-white">{aiScore}<span className="text-xl text-blue-400">/100</span></div>
+            <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest mt-1">
+              {aiScore >= 80 ? 'Low Risk' : aiScore >= 50 ? 'Medium Risk' : 'High Risk'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Checklist Status Panel */}
       {myDeptTasks.length > 0 && (
@@ -181,7 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, dmax, checklists,
               </thead>
               <tbody className="divide-y divide-slate-50/5">
                 {myEvidence.slice(-5).reverse().map((e) => {
-                  const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || e.checklistItemId.toUpperCase();
+                  const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || (e.checklistItemId || 'UNKNOWN').toUpperCase();
                   return (
                     <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="py-5">

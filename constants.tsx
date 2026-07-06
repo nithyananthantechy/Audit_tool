@@ -1,16 +1,16 @@
 
 import { Department, ChecklistItem, User, Role, AuditStatus } from './types';
 
-export const APP_NAME = "Audit & Compliance Portal";
-export const COMPANY_NAME = "DesiCrew Solutions Private Limited";
+export const APP_NAME = "SparkAudit";
+export const COMPANY_NAME = "NITECHSPARK";
 export const COMPANY_TAGLINE = "Empowering Compliance Through Digital Excellence";
-export const DESICREW_LOGO = "/logo.png";
+export const NITECHSPARK_LOGO = "/logo.png";
 
 export const MOCK_USERS: User[] = [
   {
     id: 'u1',
     name: 'System Admin',
-    email: 'admin@desicrew.in',
+    email: 'admin@nitechspark.com',
     role: Role.SUPER_ADMIN,
     department: Department.ADMIN,
     isActive: true,
@@ -21,7 +21,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'u2',
     name: 'Anjali Nair',
-    email: 'anjali.n@desicrew.in',
+    email: 'anjali.n@nitechspark.com',
     role: Role.INTERNAL_AUDITOR,
     department: Department.AUDIT,
     isActive: true,
@@ -32,7 +32,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'u3',
     name: 'Suresh Kumar',
-    email: 'suresh.k@desicrew.in',
+    email: 'suresh.k@nitechspark.com',
     role: Role.EXTERNAL_AUDITOR,
     department: Department.AUDIT,
     isActive: true,
@@ -43,7 +43,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'u4',
     name: 'Priya Sharma',
-    email: 'priya.s@desicrew.in',
+    email: 'priya.s@nitechspark.com',
     role: Role.MANAGER,
     department: Department.HR,
     isActive: true,
@@ -54,7 +54,7 @@ export const MOCK_USERS: User[] = [
   {
     id: 'u5',
     name: 'Rahul Varma',
-    email: 'rahul.v@desicrew.in',
+    email: 'rahul.v@nitechspark.com',
     role: Role.CONTRIBUTOR,
     department: Department.OPERATIONS,
     isActive: true,

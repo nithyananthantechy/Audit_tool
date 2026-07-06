@@ -38,13 +38,8 @@ describe('Notifications API', () => {
     it('should mark notification as read', async () => {
       const notifyId = 'test-not-' + crypto.randomBytes(4).toString('hex');
       
-      await new Promise((resolve, reject) => {
-        const db = require('better-sqlite3')(require('path').join(__dirname, '../audit.db'));
-        db.prepare(`INSERT OR IGNORE INTO notifications (id, userId, type, title, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?, 0, ?)`)
-          .run(notifyId, userId, 'info', 'Test Notification', 'Test message', new Date().toISOString());
-        db.close();
-        resolve();
-      });
+      await app.db.prepare(`INSERT INTO notifications (id, userId, type, title, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?, 0, ?) ON CONFLICT DO NOTHING`)
+        .run(notifyId, userId, 'info', 'Test Notification', 'Test message', new Date().toISOString());
 
       const res = await request(app)
         .put(`/api/notifications/${notifyId}/read`)

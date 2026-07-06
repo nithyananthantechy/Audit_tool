@@ -3,7 +3,7 @@
     {
       "id": "u1",
       "name": "System Admin",
-      "email": "admin@desicrew.in",
+      "email": "admin@nitechspark.in",
       "role": "Super Admin",
       "department": "Admin",
       "isActive": true,
@@ -14,7 +14,7 @@
     {
       "id": "9ykf4mwwi",
       "name": "Gowri Amutha",
-      "email": "gowriamutha@desicrew.in",
+      "email": "gowriamutha@nitechspark.in",
       "role": "Super Admin",
       "department": "IT",
       "isActive": true,
@@ -25,7 +25,7 @@
     {
       "id": "011egr9ah",
       "name": "test",
-      "email": "test@desicrew.in",
+      "email": "test@nitechspark.in",
       "role": "Contributor",
       "department": "Operations",
       "isActive": true,

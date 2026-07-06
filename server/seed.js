@@ -17,7 +17,7 @@ function generateRandomUser(index) {
     return {
         id: `user${index}`,
         name: `Employee ${index}`,
-        email: `employee${index}@desicrew.in`,
+        email: `employee${index}@nitechspark.com`,
         role: role,
         department: dept,
         isActive: 1,

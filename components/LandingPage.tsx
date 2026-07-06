@@ -1,5 +1,5 @@
 import React from 'react';
-import { DESICREW_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
+import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
 import {
   ShieldCheck,
   Search,
@@ -26,16 +26,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       <nav className="fixed top-0 left-0 w-full h-20 bg-slate-950/40 backdrop-blur-md border-b border-white/5 z-[100] px-6 md:px-12 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <img
-              src={DESICREW_LOGO}
-              alt={`${COMPANY_NAME} Logo`}
-              className="h-10 w-auto object-contain filter brightness-0 invert opacity-90"
-              style={{ maxHeight: '44px' }}
-            />
-          </div>
-          <div className="hidden lg:block h-6 w-px bg-white/10 mx-2"></div>
-          <div className="hidden lg:block">
-            <p className="text-sm font-black text-white uppercase tracking-[0.2em]">{APP_NAME}</p>
+            <div className="flex items-center">
+              <img
+                src={NITECHSPARK_LOGO}
+                alt={`${COMPANY_NAME} Logo`}
+                className="h-16 w-auto object-contain scale-110 origin-left mix-blend-screen"
+              />
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-xl font-black text-white tracking-wide">{APP_NAME}</p>
+            </div>
           </div>
         </div>
 
@@ -70,7 +70,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             </div>
 
             <h2 className="text-5xl md:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
-              DesiCrew <span className="text-blue-500">Internal</span> <br /> Audit & Compliance Hub
+              NITECHSPARK <span className="text-blue-500">Unified</span> <br /> Audit & Compliance Hub
             </h2>
 
             <p className="text-lg md:text-xl text-slate-400 max-w-xl leading-relaxed">
@@ -116,7 +116,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
             />
             <FeatureCard
               icon={<Lock className="text-orange-500" />}
-              title="DMAX Reporting"
+              title="CAPA Reporting"
               desc="Digital Compliance Health Tracking across the organization."
               color="bg-orange-500/5 border-orange-500/10"
             />
@@ -162,10 +162,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       <footer className="py-12 px-6 md:px-12 border-t border-white/5 text-center bg-slate-950">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={DESICREW_LOGO} alt="DesiCrew" className="h-6 w-auto opacity-50 filter brightness-0 invert" />
+            <img src={NITECHSPARK_LOGO} alt="NITECHSPARK" className="h-12 w-auto mix-blend-screen opacity-80" />
             <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">{APP_NAME}</span>
           </div>
-          <p className="text-xs text-slate-600">&copy; {new Date().getFullYear()} DesiCrew Solutions Private Limited. All rights reserved.</p>
+          <p className="text-xs text-slate-600">&copy; {new Date().getFullYear()} NITECHSPARK Solutions. All rights reserved.</p>
           <div className="flex justify-center gap-6 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
             <button className="hover:text-blue-400 transition-colors">Privacy Policy</button>
             <button className="hover:text-blue-400 transition-colors">Terms of Access</button>

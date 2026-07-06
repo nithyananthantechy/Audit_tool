@@ -32,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
   });
 
   const notifications = [
-    { id: '1', title: 'New DMAX Submission', message: 'IT Department submitted a new report.', type: 'info', time: '5m ago' },
+    { id: '1', title: 'New CAPA Submission', message: 'IT Department submitted a new report.', type: 'info', time: '5m ago' },
     { id: '2', title: 'Audit Approved', message: 'Your HR evidence was approved by the manager.', type: 'success', time: '1h ago' },
     { id: '3', title: 'Pending Audit', message: '3 items are pending your review.', type: 'warning', time: '2h ago' },
   ];

@@ -269,6 +269,23 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
                           {e.managerComment}
                         </div>
                       )}
+                      {/* Real-time Collaboration Comments */}
+                      <div className="mb-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Collaboration Notes</span>
+                          <span className="text-[9px] text-blue-400 flex items-center gap-1 animate-pulse"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div> Live Sync</span>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="w-6 h-6 rounded-full bg-blue-600/20 flex flex-shrink-0 items-center justify-center text-[10px] font-bold text-blue-400">{user.name.charAt(0)}</div>
+                          <div className="flex-1 bg-white/5 rounded-xl p-3 text-xs text-slate-300">
+                            Automated System Note: Please ensure to append quarterly evidence next time.
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2">
+                          <input type="text" placeholder="Add a comment..." className="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500/50" />
+                          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-500">Post</button>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-6 text-[9px] font-black text-slate-600 uppercase tracking-widest">
                         <span className="flex items-center gap-2"><Calendar size={14} className="text-slate-700" /> {e.submissionDate}</span>
                         {e.fileUrl && (

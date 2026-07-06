@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
-import { User, DMAXReport, AuditStatus, Department, Role } from '../types';
+import { User, CAPAReport, AuditStatus, Department, Role } from '../types';
 import { STATUS_COLORS } from '../constants';
 import { FilePlus2, Search, Calendar, CheckCircle2, Loader2, FileText, ChevronRight, Upload, X, AlertCircle, Download } from 'lucide-react';
 import { api } from '../apiClient';
 
-interface DMAXProps {
+interface CAPAProps {
   user: User;
-  reports: DMAXReport[];
-  setReports: React.Dispatch<React.SetStateAction<DMAXReport[]>>;
+  reports: CAPAReport[];
+  setReports: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
 }
 
-const MAX_DMAX_LENGTH = 2000;
+const MAX_CAPA_LENGTH = 2000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -21,7 +21,7 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 ];
 
-const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
+const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
   const [month, setMonth] = useState('January');
   const [content, setContent] = useState('');
   const [fileName, setFileName] = useState('');
@@ -70,21 +70,21 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
     }
 
     if (!fileUrl) {
-      setError('A DMAX report document is mandatory.');
+      setError('A CAPA report document is mandatory.');
       return;
     }
 
     // Check for duplicate submission for the same month/year
     const duplicate = reports.find(r => r.userId === user.id && r.month === month && r.year === 2024);
     if (duplicate && duplicate.status !== AuditStatus.REJECTED) {
-      setError(`A DMAX report for ${month} 2024 has already been submitted.`);
+      setError(`A CAPA report for ${month} 2024 has already been submitted.`);
       return;
     }
 
     setIsSubmitting(true);
 
     setTimeout(() => {
-      const newReport: DMAXReport = {
+      const newReport: CAPAReport = {
         id: Math.random().toString(36).substr(2, 9),
         userId: user.id,
         userName: user.name,
@@ -102,7 +102,7 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
       // Optimistic update
       setReports(prev => [...prev, newReport]);
 
-      api.addDmax(newReport).then(() => {
+      api.addCapa(newReport).then(() => {
         setContent('');
         setFileName('');
         setFileSize('');
@@ -124,7 +124,7 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tight">DMAX <span className="text-blue-500">Reports</span></h1>
+          <h1 className="text-4xl font-black text-white tracking-tight">CAPA <span className="text-blue-500">Reports</span></h1>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Monthly Accomplishment Protocol</p>
         </div>
         <div className="flex items-center gap-4">
@@ -171,13 +171,13 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Executive Summary</label>
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${content.length > MAX_DMAX_LENGTH * 0.9 ? 'text-red-500' : 'text-slate-700'}`}>
-                    {content.length} / {MAX_DMAX_LENGTH}
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${content.length > MAX_CAPA_LENGTH * 0.9 ? 'text-red-500' : 'text-slate-700'}`}>
+                    {content.length} / {MAX_CAPA_LENGTH}
                   </span>
                 </div>
                 <textarea
                   value={content}
-                  maxLength={MAX_DMAX_LENGTH}
+                  maxLength={MAX_CAPA_LENGTH}
                   onChange={(e) => setContent(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 rounded-3xl p-6 text-sm font-medium text-white placeholder:text-slate-800 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none min-h-[160px] leading-relaxed"
                   placeholder="Key accomplishments..."
@@ -195,7 +195,7 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
                       type="file"
                       onChange={handleFileUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                      id="dmax-upload"
+                      id="capa-upload"
                       accept=".pdf,.doc,.docx,.xls,.xlsx"
                     />
                     <div className="flex flex-col items-center justify-center w-full h-32 bg-slate-950/40 border-2 border-dashed border-white/5 rounded-3xl px-4 text-center group-hover:border-blue-500/50 group-hover:bg-blue-600/5 transition-all">
@@ -325,4 +325,4 @@ const DMAXModule: React.FC<DMAXProps> = ({ user, reports, setReports }) => {
   );
 };
 
-export default DMAXModule;
+export default CAPAModule;

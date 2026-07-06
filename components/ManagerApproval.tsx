@@ -1,25 +1,41 @@
 
 import React, { useState } from 'react';
-import { User, Evidence, AuditStatus, DMAXReport, Role, ActivityType } from '../types';
+import { User, Evidence, AuditStatus, CAPAReport, Role, ActivityType } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
-import { Check, X, Eye, FileText, ClipboardList, Download, Calendar, User as UserIcon, ShieldAlert } from 'lucide-react';
+import { Check, X, Eye, FileText, ClipboardList, Download, Calendar, User as UserIcon, ShieldAlert, Brain, Loader2 } from 'lucide-react';
+import { api } from '../apiClient';
 
 interface ManagerApprovalProps {
   user: User;
   evidence: Evidence[];
   setEvidence: React.Dispatch<React.SetStateAction<Evidence[]>>;
-  dmax: DMAXReport[];
-  setDmax: React.Dispatch<React.SetStateAction<DMAXReport[]>>;
+  capa: CAPAReport[];
+  setCapa: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
   logActivity: (user: User, action: ActivityType, description: string) => void;
 }
 
-const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEvidence, dmax, setDmax, logActivity }) => {
-  const [activeView, setActiveView] = useState<'evidence' | 'dmax'>('evidence');
+const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEvidence, capa, setCapa, logActivity }) => {
+  const [activeView, setActiveView] = useState<'evidence' | 'capa'>('evidence');
   const [feedback, setFeedback] = useState('');
+  const [aiInsights, setAiInsights] = useState<Record<string, string>>({});
+  const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+
+  const handleAiAnalysis = async (id: string, context: string, type: 'evidence' | 'capa') => {
+    setAiLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      const response = await api.getAIInsights(context, type);
+      setAiInsights(prev => ({ ...prev, [id]: response.insights }));
+    } catch (err) {
+      console.error(err);
+      setAiInsights(prev => ({ ...prev, [id]: 'AI analysis failed. Please ensure GEMINI_API_KEY is valid.' }));
+    } finally {
+      setAiLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
 
   // Internal Auditor reviews ALL departments
   const pendingEvidence = evidence.filter(e => e.status === AuditStatus.SUBMITTED);
-  const pendingDmax = dmax.filter(d => d.status === AuditStatus.SUBMITTED);
+  const pendingCapa = capa.filter(d => d.status === AuditStatus.SUBMITTED);
 
   if (user.role !== Role.INTERNAL_AUDITOR) {
     return (
@@ -47,16 +63,16 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
     setFeedback('');
   };
 
-  const handleDmaxAction = (id: string, approve: boolean) => {
-    const target = dmax.find(d => d.id === id);
-    setDmax(prev => prev.map(d =>
+  const handleCapaAction = (id: string, approve: boolean) => {
+    const target = capa.find(d => d.id === id);
+    setCapa(prev => prev.map(d =>
       d.id === id
         ? { ...d, status: approve ? AuditStatus.MANAGER_APPROVED : AuditStatus.REJECTED }
         : d
     ));
 
     logActivity(user, approve ? ActivityType.APPROVAL : ActivityType.REJECTION,
-      `Internal Auditor ${approve ? 'Approved' : 'Rejected'} DMAX report for ${target?.userName}.`);
+      `Internal Auditor ${approve ? 'Approved' : 'Rejected'} CAPA report for ${target?.userName}.`);
   };
 
   return (
@@ -75,11 +91,11 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
             Compliance Queue ({pendingEvidence.length})
           </button>
           <button
-            onClick={() => setActiveView('dmax')}
-            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'dmax' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            onClick={() => setActiveView('capa')}
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'capa' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
           >
             <FileText size={16} />
-            DMAX Stream ({pendingDmax.length})
+            CAPA Stream ({pendingCapa.length})
           </button>
         </div>
       </div>
@@ -119,6 +135,12 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
                             <Download size={14} /> Artifact
                           </button>
                         )}
+                        <button 
+                          onClick={() => handleAiAnalysis(e.id, `Task: ${task}\nDepartment: ${e.department}\nComment: ${e.comment}`, 'evidence')}
+                          disabled={aiLoading[e.id]}
+                          className="flex items-center gap-3 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-500/30 transition-all">
+                          {aiLoading[e.id] ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />} AI Analysis
+                        </button>
                         <button className="p-3 text-slate-600 hover:text-white bg-white/5 rounded-xl border border-white/5 transition-all"><Eye size={18} /></button>
                       </div>
                     </div>
@@ -128,6 +150,14 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
                       </div>
                       "{e.comment}"
                     </div>
+                    {aiInsights[e.id] && (
+                      <div className="bg-indigo-950/40 border border-indigo-500/20 p-6 rounded-[32px] text-sm font-medium text-indigo-200 leading-relaxed mb-8 relative">
+                        <div className="absolute top-0 left-8 -translate-y-1/2 bg-indigo-900 px-3 py-0.5 font-black text-[8px] text-indigo-300 border border-indigo-500/30 rounded-full tracking-[0.2em] uppercase flex items-center gap-1">
+                          <Brain size={10} /> AI Risk Assessment
+                        </div>
+                        {aiInsights[e.id]}
+                      </div>
+                    )}
                     <div className="flex flex-col sm:flex-row gap-6 items-center">
                       <div className="relative flex-1 w-full">
                         <input
@@ -153,31 +183,47 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
           </div>
         ) : (
           <div className="divide-y divide-white/5">
-            {pendingDmax.length === 0 ? (
+            {pendingCapa.length === 0 ? (
               <div className="py-32 text-center">
                 <div className="bg-emerald-500/10 w-20 h-20 rounded-[32px] flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
                   <Check className="text-emerald-400" size={36} />
                 </div>
-                <p className="text-slate-500 font-black text-xs uppercase tracking-[0.2em]">DMAX channel clear</p>
+                <p className="text-slate-500 font-black text-xs uppercase tracking-[0.2em]">CAPA channel clear</p>
               </div>
             ) : (
-              pendingDmax.map(d => (
+              pendingCapa.map(d => (
                 <div key={d.id} className="p-10 hover:bg-white/[0.01] transition-all group">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                     <div className="flex items-center gap-6">
                       <div className="bg-blue-600/20 p-4 rounded-3xl border border-blue-500/30 shadow-xl"><FileText size={28} className="text-blue-400" /></div>
                       <div>
-                        <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{d.month} DMAX <span className="text-blue-500">Report</span></h3>
+                        <h3 className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{d.month} CAPA <span className="text-blue-500">Report</span></h3>
                         <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Entity: {d.userName} • Sector: {d.department}</p>
                       </div>
                     </div>
-                    <button onClick={() => handleDmaxAction(d.id, true)} className="w-full md:w-auto bg-emerald-600 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 shadow-2xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
-                      <Check size={18} /> Approve Release
-                    </button>
+                    <div className="flex gap-3 w-full md:w-auto">
+                      <button 
+                        onClick={() => handleAiAnalysis(d.id, `Report context: ${d.content}\nDepartment: ${d.department}`, 'capa')}
+                        disabled={aiLoading[d.id]}
+                        className="flex items-center gap-3 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-indigo-500/30 transition-all">
+                        {aiLoading[d.id] ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />} AI Action Plan
+                      </button>
+                      <button onClick={() => handleCapaAction(d.id, true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 shadow-2xl shadow-emerald-500/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
+                        <Check size={18} /> Approve Release
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-slate-950/60 border border-white/5 p-8 rounded-[40px] text-sm italic font-medium text-slate-400 leading-relaxed shadow-inner">
+                  <div className="bg-slate-950/60 border border-white/5 p-8 rounded-[40px] text-sm italic font-medium text-slate-400 leading-relaxed shadow-inner mb-6">
                     "{d.content}"
                   </div>
+                  {aiInsights[d.id] && (
+                    <div className="bg-indigo-950/40 border border-indigo-500/20 p-6 rounded-[32px] text-sm font-medium text-indigo-200 leading-relaxed mb-6 relative">
+                      <div className="absolute top-0 left-8 -translate-y-1/2 bg-indigo-900 px-3 py-0.5 font-black text-[8px] text-indigo-300 border border-indigo-500/30 rounded-full tracking-[0.2em] uppercase flex items-center gap-1">
+                        <Brain size={10} /> AI Action Plan
+                      </div>
+                      <div className="whitespace-pre-wrap">{aiInsights[d.id]}</div>
+                    </div>
+                  )}
                 </div>
               ))
             )}

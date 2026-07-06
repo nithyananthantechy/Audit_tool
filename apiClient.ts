@@ -1,4 +1,4 @@
-import { User, ActivityLog, ChecklistItem, Evidence, DMAXReport } from './types';
+import { User, ActivityLog, ChecklistItem, Evidence, CAPAReport } from './types';
 
 const API_Base = getApiBaseUrl();
 
@@ -130,17 +130,31 @@ export const api = {
         });
     },
 
-    addDmax: async (dmax: DMAXReport) => {
-        return fetchJSON(`${API_Base}/dmax`, {
+    addCapa: async (capa: CAPAReport) => {
+        return fetchJSON(`${API_Base}/capa`, {
             method: 'POST',
-            body: JSON.stringify(dmax)
+            body: JSON.stringify(capa)
         });
     },
 
-    updateDmax: async (dmax: DMAXReport) => {
-        return fetchJSON(`${API_Base}/dmax/${dmax.id}`, {
+    updateCapa: async (capa: CAPAReport) => {
+        return fetchJSON(`${API_Base}/capa/${capa.id}`, {
             method: 'PUT',
-            body: JSON.stringify(dmax)
+            body: JSON.stringify(capa)
         });
+    },
+
+    getAIInsights: async (context: string, promptType: 'evidence' | 'capa') => {
+        return fetchJSON(`${API_Base}/analytics/ai-insights`, {
+            method: 'POST',
+            body: JSON.stringify({ context, promptType })
+        });
+    },
+
+    getComplianceScore: async (department?: string) => {
+        const url = department 
+            ? `${API_Base}/analytics/compliance-score?department=${encodeURIComponent(department)}`
+            : `${API_Base}/analytics/compliance-score`;
+        return fetchJSON(url);
     }
 };

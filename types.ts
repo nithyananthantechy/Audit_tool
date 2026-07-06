@@ -14,7 +14,16 @@ export enum Department {
   IT = 'IT',
   ADMIN = 'Admin',
   OPERATIONS = 'Operations',
-  AUDIT = 'Audit'
+  AUDIT = 'Audit',
+  FINANCE = 'Finance',
+  LEGAL = 'Legal',
+  QUALITY_ASSURANCE = 'Quality Assurance',
+  SECURITY = 'Security',
+  PROCUREMENT = 'Procurement',
+  SALES = 'Sales',
+  MARKETING = 'Marketing',
+  R_AND_D = 'Research & Development',
+  SUPPLY_CHAIN = 'Supply Chain'
 }
 
 export enum AuditStatus {
@@ -77,7 +86,7 @@ export interface Evidence {
   cgoComment?: string;
 }
 
-export interface DMAXReport {
+export interface CAPAReport {
   id: string;
   userId: string;
   userName: string;
