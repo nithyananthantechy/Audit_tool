@@ -1,52 +1,41 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+require('dotenv').config({ path: '../.env.production' });
+const { neon } = require('@neondatabase/serverless');
+const bcrypt = require('bcrypt');
 
-const DB_FILE = path.join(__dirname, 'audit.db');
-const db = new Database(DB_FILE);
+// Using the provided Neon URL as fallback if env is missing
+const sql = neon(process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_Jn8WgiI2kKvG@ep-cold-bonus-aohuzio6-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require');
 
-const departments = ['HR', 'IT', 'Operations', 'Finance', 'Marketing', 'Sales', 'Legal', 'Support'];
-const roles = ['Contributor', 'Manager Approver', 'Super Admin'];
+async function seed() {
+    try {
+        console.log('Starting database seeding...');
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        
+        const coreUsers = [
+            { id: 'admin1', name: 'Super Admin', email: 'admin@nitechspark.in', role: 'Super Admin', dept: 'IT' },
+            { id: 'it_user', name: 'IT Staff', email: 'it@desicrew.in', role: 'Manager Approver', dept: 'IT' },
+            { id: 'hr_user', name: 'HR Staff', email: 'hr@desicrew.in', role: 'Manager Approver', dept: 'HR' },
+            { id: 'finance_user', name: 'Finance Staff', email: 'finance@desicrew.in', role: 'Manager Approver', dept: 'Finance' },
+            { id: 'security_user', name: 'Security Staff', email: 'security@desicrew.in', role: 'Manager Approver', dept: 'Security' },
+            { id: 'sales_user', name: 'Sales Staff', email: 'sales@desicrew.in', role: 'Contributor', dept: 'Sales' },
+            { id: 'ops_user', name: 'Operations Staff', email: 'operations@desicrew.in', role: 'Contributor', dept: 'Operations' }
+        ];
 
-function generateRandomUser(index) {
-    const depts = ['HR', 'IT', 'Operations', 'Finance', 'Marketing', 'Sales', 'Legal', 'Support'];
-    const rolesList = ['Contributor', 'Manager Approver', 'Super Admin'];
-    
-    const dept = depts[Math.floor(Math.random() * depts.length)];
-    const role = index < 5 ? 'Super Admin' : (index < 50 ? 'Manager Approver' : rolesList[Math.floor(Math.random() * 2)]);
-    
-    return {
-        id: `user${index}`,
-        name: `Employee ${index}`,
-        email: `employee${index}@nitechspark.com`,
-        role: role,
-        department: dept,
-        isActive: 1,
-        password: `Password${index}@`,
-        isLocked: 0,
-        loginAttempts: 0
-    };
-}
-
-console.log('Seeding 1500 users...');
-
-const insertStmt = db.prepare(`
-    INSERT OR IGNORE INTO users (id, name, email, role, department, isActive, password, isLocked, loginAttempts)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-const insertMany = db.transaction((users) => {
-    for (const user of users) {
-        insertStmt.run(user.id, user.name, user.email, user.role, user.department, user.isActive, user.password, user.isLocked, user.loginAttempts);
+        for (const user of coreUsers) {
+            await sql`
+                INSERT INTO users (id, name, email, role, department, isactive, password, islocked, loginattempts)
+                VALUES (${user.id}, ${user.name}, ${user.email}, ${user.role}, ${user.dept}, 1, ${hashedPassword}, 0, 0)
+                ON CONFLICT (email) DO UPDATE SET 
+                    password = ${hashedPassword}, 
+                    role = ${user.role}, 
+                    department = ${user.dept};
+            `;
+            console.log(`Upserted user: ${user.email}`);
+        }
+        
+        console.log('Database seeded successfully with all core department users!');
+    } catch (e) {
+        console.error('Seeding error:', e);
     }
-});
-
-const users = [];
-for (let i = 1; i <= 1500; i++) {
-    users.push(generateRandomUser(i));
 }
 
-insertMany(users);
-
-const count = db.prepare('SELECT COUNT(*) as count FROM users').get();
-console.log(`Database now has ${count.count} users`);
-console.log('Done!');
+seed();
