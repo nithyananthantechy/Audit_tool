@@ -130,7 +130,9 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
                 >
                   <option value="" className="bg-slate-900">Select objective...</option>
                   {departmentTasks.map(task => (
-                    <option key={task.id} value={task.id} className="bg-slate-900">{task.task}</option>
+                    <option key={task.id} value={task.id} className="bg-slate-900">
+                      {task.task} {task.framework ? `[${task.framework} - ${task.control_clause}]` : ''}
+                    </option>
                   ))}
                 </select>
                 <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 rotate-90 pointer-events-none" size={18} />
@@ -239,7 +241,8 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
             </div>
           ) : (
             [...mySubmissions].reverse().map(e => {
-              const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || 'Archived Task';
+              const taskObj = checklists.find(t => t.id === e.checklistItemId);
+              const taskLabel = taskObj?.task || 'Archived Task';
               return (
                 <div key={e.id} className="p-8 hover:bg-white/[0.01] transition-all group">
                   <div className="flex items-start gap-6">
@@ -253,7 +256,14 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-base font-black text-white group-hover:text-blue-400 transition-colors truncate pr-8">{taskLabel}</h3>
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-base font-black text-white group-hover:text-blue-400 transition-colors truncate pr-8">{taskLabel}</h3>
+                          {taskObj?.framework && (
+                            <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-widest">
+                              {taskObj.framework} {taskObj.control_clause && `- ${taskObj.control_clause}`}
+                            </span>
+                          )}
+                        </div>
                         <span className={`text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border shadow-sm ${STATUS_COLORS[e.status]}`}>
                           {e.status}
                         </span>

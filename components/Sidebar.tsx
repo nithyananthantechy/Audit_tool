@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Users,
   Building2,
+  Fingerprint
 } from 'lucide-react';
 import { NITECHSPARK_LOGO, COMPANY_NAME, APP_NAME } from '../constants';
 
@@ -29,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, department, activeTab, setActiv
     { id: 'capa', label: 'CAPA Reports', icon: FileText, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR] },
     { id: 'approvals', label: 'Audit Inbox', icon: CheckSquare, roles: [Role.INTERNAL_AUDITOR] },
     { id: 'executive', label: 'Compliance Sign-off', icon: ShieldCheck, roles: [Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN] },
+    { id: 'auditlog', label: 'Audit Log', icon: Fingerprint, roles: [Role.SUPER_ADMIN, Role.EXTERNAL_AUDITOR, Role.INTERNAL_AUDITOR] },
   ];
 
   const filteredItems = menuItems.filter(item => item.roles.includes(role));

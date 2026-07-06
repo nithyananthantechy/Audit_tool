@@ -121,13 +121,28 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
       {/* Checklist Status Panel */}
       {myDeptTasks.length > 0 && (
         <div className="bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[40px] border border-white/[0.08] shadow-2xl">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-black text-white tracking-tight">Checklist <span className="text-blue-500">Status</span></h2>
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-1">{user.department} Department Tasks</p>
             </div>
             <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-full border border-white/5">
               {submittedTaskIds.size}/{myDeptTasks.length} Submitted
+            </div>
+          </div>
+
+          <div className="mb-6 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
+            <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+              <span>Framework Compliance Coverage</span>
+              <span className="text-blue-400">{Math.round((submittedTaskIds.size / Math.max(1, myDeptTasks.length)) * 100)}%</span>
+            </div>
+            <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-white/10 shadow-inner">
+              <div 
+                className="bg-gradient-to-r from-blue-600 to-emerald-400 h-full transition-all duration-1000 ease-out relative"
+                style={{ width: `${(submittedTaskIds.size / Math.max(1, myDeptTasks.length)) * 100}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              </div>
             </div>
           </div>
 
@@ -143,7 +158,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
                     {submitted ? <CheckCircle2 size={18} /> : <Clock size={18} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white truncate">{task.task}</p>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-bold text-white truncate">{task.task}</p>
+                      {task.framework && (
+                        <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[9px] font-bold uppercase tracking-widest hidden sm:inline-block">
+                          {task.framework} {task.control_clause && `- ${task.control_clause}`}
+                        </span>
+                      )}
+                    </div>
                     {latestStatus && (
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{latestStatus}</p>
                     )}

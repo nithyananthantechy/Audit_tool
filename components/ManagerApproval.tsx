@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { User, Evidence, AuditStatus, CAPAReport, Role, ActivityType } from '../types';
+import { User, Evidence, AuditStatus, CAPAReport, Role, ActivityType, ChecklistItem } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
 import { Check, X, Eye, FileText, ClipboardList, Download, Calendar, User as UserIcon, ShieldAlert, Brain, Loader2 } from 'lucide-react';
 import { api } from '../apiClient';
@@ -12,9 +11,10 @@ interface ManagerApprovalProps {
   capa: CAPAReport[];
   setCapa: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
   logActivity: (user: User, action: ActivityType, description: string) => void;
+  checklists: ChecklistItem[];
 }
 
-const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEvidence, capa, setCapa, logActivity }) => {
+const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEvidence, capa, setCapa, logActivity, checklists }) => {
   const [activeView, setActiveView] = useState<'evidence' | 'capa'>('evidence');
   const [feedback, setFeedback] = useState('');
   const [aiInsights, setAiInsights] = useState<Record<string, string>>({});
@@ -112,7 +112,8 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
               </div>
             ) : (
               pendingEvidence.map(e => {
-                const task = DEPARTMENT_CHECKLISTS.find(t => t.id === e.checklistItemId)?.task;
+                const taskObj = checklists.find(t => t.id === e.checklistItemId);
+                const task = taskObj?.task || 'Unknown Task';
                 return (
                   <div key={e.id} className="p-10 hover:bg-white/[0.01] transition-all group">
                     <div className="flex justify-between items-start mb-8">
@@ -121,7 +122,14 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
                           {e.department}
                         </div>
                         <div>
-                          <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{task}</h3>
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-xl font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{task}</h3>
+                            {taskObj?.framework && (
+                              <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-bold uppercase tracking-widest">
+                                {taskObj.framework} {taskObj.control_clause && `- ${taskObj.control_clause}`}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-4 mt-2 text-slate-500 text-[9px] font-black uppercase tracking-widest">
                             <Calendar size={12} className="text-slate-700" /> {e.submissionDate}
                             <span className="text-slate-800">•</span>

@@ -64,6 +64,21 @@ export const api = {
         return result;
     },
 
+    setupMfa: async () => {
+        return fetchJSON(`${API_Base}/mfa/setup`, { method: 'POST' });
+    },
+
+    verifyMfa: async (userId: string, token: string) => {
+        const result = await fetchJSON(`${API_Base}/mfa/verify`, {
+            method: 'POST',
+            body: JSON.stringify({ userId, token })
+        });
+        if (result.token) {
+            setAuthToken(result.token);
+        }
+        return result;
+    },
+
     me: async () => {
         return fetchJSON(`${API_Base}/auth/me`);
     },

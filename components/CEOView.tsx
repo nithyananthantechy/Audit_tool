@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 /* Fix: Added User and ActivityType to the imports */
-import { Evidence, CAPAReport, AuditStatus, Department, Role, User, ActivityType } from '../types';
+import { ActivityType, CAPAReport, Evidence, Role, User } from '../types';
 import { STATUS_COLORS } from '../constants';
-import { Download, Filter, ShieldCheck, CheckCircle, Clock, FileText, ChevronDown, ListChecks, ShieldAlert } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import ReportGenerator from './ReportGenerator';
+import { Download, ShieldCheck, CheckCircle, FileText, ListChecks, ShieldAlert } from 'lucide-react';
 
 interface CEOViewProps {
   evidence: Evidence[];
@@ -12,11 +11,12 @@ interface CEOViewProps {
   setEvidence: React.Dispatch<React.SetStateAction<Evidence[]>>;
   setCapa: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
   user: User;
+  users: User[];
   logActivity: (user: User, action: ActivityType, description: string) => void;
 }
 
-const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa, user, logActivity }) => {
-  const [filterDept, setFilterDept] = useState<Department | 'All'>('All');
+const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa, user, users, logActivity }) => {
+  const [filterDept, setFilterDept] = useState<'All' | string>('All');
   const [activeReportTab, setActiveReportTab] = useState<'evidence' | 'capa'>('evidence');
 
   if (user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN) {
@@ -33,12 +33,12 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
   const filteredCapa = filterDept === 'All' ? capa : capa.filter(d => d.department === filterDept);
 
   const handleFinalAuditEvidence = (id: string) => {
-    setEvidence(prev => prev.map(e => e.id === id ? { ...e, status: AuditStatus.FINAL_AUDIT_COMPLETED } : e));
+    setEvidence(prev => prev.map(e => e.id === id ? { ...e, status: 'Final Audit Completed' as any } : e));
     logActivity(user, ActivityType.APPROVAL, `External Auditor performed final sign-off for checklist item ID: ${id}`);
   };
 
   const handleFinalAuditCapa = (id: string) => {
-    setCapa(prev => prev.map(d => d.id === id ? { ...d, status: AuditStatus.FINAL_AUDIT_COMPLETED } : d));
+    setCapa(prev => prev.map(d => d.id === id ? { ...d, status: 'Final Audit Completed' as any } : d));
     logActivity(user, ActivityType.APPROVAL, `External Auditor certified CAPA report ID: ${id}`);
   };
 
@@ -54,9 +54,13 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
           </h1>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Executive Certification & External Audit Ledger</p>
         </div>
-        <button className="flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 transition-all shadow-2xl active:scale-[0.98]">
-          <Download size={18} className="text-blue-400" /> Export Compliance Ledger
-        </button>
+        <ReportGenerator 
+          evidence={evidence} 
+          capa={capa} 
+          checklists={DEPARTMENT_CHECKLISTS} 
+          users={users}
+          currentUser={user} 
+        />
       </div>
 
       <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl">

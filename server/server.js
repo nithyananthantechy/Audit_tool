@@ -83,23 +83,28 @@ class MockDatabase {
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const app = express();
 app.set('trust proxy', 1); // Trust Render's proxy to get real user IP
 
 const rateLimitStore = new Map();
-const RATE_LIMIT = 100;
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
+const RATE_LIMIT = 50;
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 
 async function rateLimitMiddleware(req, res, next) {
-  const ip = req.ip || req.connection.remoteAddress;
+  // Use token if available to rate-limit per-user, fallback to IP
+  const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+  const key = token || req.ip || req.connection.remoteAddress;
+  
   const now = Date.now();
-  if (!rateLimitStore.has(ip)) {
-    rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+  if (!rateLimitStore.has(key)) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
   } else {
-    const data = await rateLimitStore.get(ip);
+    const data = await rateLimitStore.get(key);
     if (now > data.resetTime) {
-      rateLimitStore.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+      rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     } else {
       data.count++;
       if (data.count > RATE_LIMIT) {
@@ -154,7 +159,9 @@ async function initDefaults() {
         isActive SMALLINT DEFAULT 1,
         password TEXT NOT NULL,
         isLocked SMALLINT DEFAULT 0,
-        loginAttempts SMALLINT DEFAULT 0
+        loginAttempts SMALLINT DEFAULT 0,
+        mfaSecret TEXT,
+        mfaEnabled SMALLINT DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS evidence (
         id TEXT PRIMARY KEY,
@@ -187,12 +194,16 @@ async function initDefaults() {
         department TEXT,
         action TEXT,
         description TEXT,
-        timestamp TEXT
+        timestamp TEXT,
+        hash TEXT,
+        previous_hash TEXT
     );
     CREATE TABLE IF NOT EXISTS checklists (
         id TEXT PRIMARY KEY,
         department TEXT NOT NULL,
-        task TEXT NOT NULL
+        task TEXT NOT NULL,
+        framework TEXT,
+        control_clause TEXT
     );
     CREATE TABLE IF NOT EXISTS tokens (
         token TEXT PRIMARY KEY,
@@ -219,6 +230,12 @@ async function initDefaults() {
         deadline SMALLINT DEFAULT 1,
         assignment SMALLINT DEFAULT 1
     );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS mfaSecret TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS mfaEnabled SMALLINT DEFAULT 0;
+    ALTER TABLE checklists ADD COLUMN IF NOT EXISTS framework TEXT;
+    ALTER TABLE checklists ADD COLUMN IF NOT EXISTS control_clause TEXT;
+    ALTER TABLE activity ADD COLUMN IF NOT EXISTS hash TEXT;
+    ALTER TABLE activity ADD COLUMN IF NOT EXISTS previous_hash TEXT;
   `);
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (Number(userCount.count) === 0) {
@@ -365,11 +382,17 @@ app.post('/api/auth/login', async (req, res) => {
     console.log(`[AUTH] Successful login for ${email}`);
     await db.prepare('UPDATE users SET loginAttempts = 0 WHERE id = ?').run(user.id);
 
-    const token = generateToken();
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-    await db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(token, user.id, expiresAt);
+    if (user.mfaEnabled === 1) {
+      return res.json({ success: true, mfaRequired: true, userId: user.id });
+    } else {
+      // Create temporary token for setup
+      const setupToken = generateToken();
+      const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+      await db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(setupToken, user.id, expiresAt);
+      return res.json({ success: true, mfaSetupRequired: true, token: setupToken, user: { ...user, password: '', mfaSecret: '' } });
+    }
 
-    const { password: _pw, ...safeUser } = user;
+    const { password: _pw, mfaSecret: _ms, ...safeUser } = user;
     res.json({ success: true, token, user: safeUser });
   } catch (err) {
     console.error('[AUTH ERROR]', err);
@@ -384,6 +407,54 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 app.post('/api/auth/logout', authMiddleware, async (req, res) => {
   await db.prepare('DELETE FROM tokens WHERE token = ?').run(req.token);
   res.json({ success: true });
+});
+
+app.post('/api/mfa/setup', authMiddleware, async (req, res) => {
+  try {
+    const secret = speakeasy.generateSecret({ name: `SparkAudit (${req.user.email})` });
+    await db.prepare('UPDATE users SET mfaSecret = ? WHERE id = ?').run(secret.base32, req.user.id);
+    
+    QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+      if (err) return res.status(500).json({ error: 'Failed to generate QR code' });
+      res.json({ success: true, secret: secret.base32, qrCodeUrl: data_url });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'MFA setup failed' });
+  }
+});
+
+app.post('/api/mfa/verify', async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user.mfaSecret) return res.status(400).json({ error: 'MFA not set up' });
+
+    const verified = speakeasy.totp.verify({
+      secret: user.mfaSecret,
+      encoding: 'base32',
+      token: token,
+      window: 1 // Allow 1 step (30s) before/after
+    });
+
+    if (verified) {
+      if (user.mfaEnabled === 0) {
+        // First time verify to enable MFA
+        await db.prepare('UPDATE users SET mfaEnabled = 1 WHERE id = ?').run(user.id);
+      }
+      
+      const sessionToken = generateToken();
+      const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+      await db.prepare('INSERT INTO tokens (token, userId, expiresAt) VALUES (?, ?, ?)').run(sessionToken, user.id, expiresAt);
+
+      const { password: _pw, mfaSecret: _ms, ...safeUser } = user;
+      res.json({ success: true, token: sessionToken, user: safeUser });
+    } else {
+      res.status(401).json({ error: 'Invalid MFA code' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'MFA verification failed' });
+  }
 });
 
 // Serve static files
@@ -446,8 +517,24 @@ app.put('/api/users/:id', authMiddleware, async (req, res) => {
 
 app.post('/api/activity', async (req, res) => {
   const newActivity = req.body;
-  await db.prepare('INSERT INTO activity (id, userId, userName, department, action, description, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)').run(newActivity.id, newActivity.userId, newActivity.userName, newActivity.department, newActivity.action, newActivity.description, newActivity.timestamp);
-  res.json({ success: true });
+  
+  try {
+    const lastActivity = await db.prepare('SELECT hash FROM activity ORDER BY timestamp DESC LIMIT 1').get();
+    const previousHash = lastActivity?.hash || '0000000000000000000000000000000000000000000000000000000000000000';
+    
+    const payload = {
+      id: newActivity.id,
+      action: newActivity.action,
+      desc: newActivity.description,
+      time: newActivity.timestamp
+    };
+    const currentHash = crypto.createHash('sha256').update(previousHash + JSON.stringify(payload)).digest('hex');
+
+    await db.prepare('INSERT INTO activity (id, userId, userName, department, action, description, timestamp, hash, previous_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(newActivity.id, newActivity.userId, newActivity.userName, newActivity.department, newActivity.action, newActivity.description, newActivity.timestamp, currentHash, previousHash);
+    res.status(201).json({ success: true, hash: currentHash });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to log activity immutably' });
+  }
 });
 
 app.post('/api/checklists', authMiddleware, async (req, res) => {

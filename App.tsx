@@ -12,6 +12,7 @@ import CEOView from './components/CEOView';
 import AdminPanel from './components/AdminPanel';
 import CAPAModule from './components/CAPAModule';
 import DepartmentHub from './components/DepartmentHub';
+import AuditLog from './components/departments/AuditLog';
 import LoginPage from './components/LoginPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import LandingPage from './components/LandingPage';
@@ -110,8 +111,11 @@ const App: React.FC = () => {
       const result = await api.login(email, password || '');
       if (result.error) {
         return { success: false, error: result.error };
-      }
-      if (result.user) {
+      } else if (result.mfaSetupRequired && result.user) {
+        setCurrentUser(result.user);
+        setLoginState('welcome');
+        return { success: true };
+      } else if (result.user) {
         setCurrentUser(result.user);
         setLoginState('welcome');
         await loadData();
@@ -129,6 +133,34 @@ const App: React.FC = () => {
       }
     } catch (err: any) {
       return { success: false, error: err.message || 'Login failed. Please check your connection.' };
+    }
+    return { success: false, error: 'Unknown authentication error.' };
+  };
+
+  const handleVerifyMfa = async (userId: string, token: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await api.verifyMfa(userId, token);
+      if (result.error) {
+        return { success: false, error: result.error };
+      }
+      if (result.user) {
+        setCurrentUser(result.user);
+        setLoginState('welcome');
+        await loadData();
+        startPolling();
+        logActivity(result.user, ActivityType.LOGIN, `User logged into the compliance portal via MFA.`);
+        setTimeout(() => {
+          setLoginState('active');
+          const role = result.user.role;
+          if (role === Role.SUPER_ADMIN) setActiveTab('admin');
+          else if (role === Role.EXTERNAL_AUDITOR) setActiveTab('executive');
+          else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
+          else setActiveTab('dashboard');
+        }, 2000);
+        return { success: true };
+      }
+    } catch (err: any) {
+      return { success: false, error: err.message || 'MFA verification failed.' };
     }
     return { success: false, error: 'Unknown authentication error.' };
   };
@@ -190,9 +222,16 @@ const App: React.FC = () => {
     );
   }
 
-  if (loginState === 'landing') return <LandingPage onLoginClick={() => setLoginState('login')} />;
-  if (loginState === 'login') return <LoginPage onLogin={handleLogin} />;
-  if (loginState === 'welcome' && currentUser) return <WelcomeScreen user={currentUser} />;
+    if (loginState === 'landing') return <LandingPage onLoginClick={() => setLoginState('login')} />;
+    if (loginState === 'login') return <LoginPage onLogin={handleLogin} onVerifyMfa={handleVerifyMfa} />;
+    if (loginState === 'welcome') return <WelcomeScreen user={currentUser!} onComplete={() => {
+      setLoginState('active');
+      const role = currentUser!.role;
+      if (role === Role.SUPER_ADMIN) setActiveTab('admin');
+      else if (role === Role.EXTERNAL_AUDITOR) setActiveTab('executive');
+      else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
+      else setActiveTab('dashboard');
+    }} />;
 
   const renderContent = () => {
     if (!currentUser) return null;
@@ -206,11 +245,13 @@ const App: React.FC = () => {
       case 'capa':
         return <CAPAModule user={currentUser} reports={capaStore} setReports={setCapaStore} logActivity={logActivity} />;
       case 'approvals':
-        return <ManagerApproval user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} capa={capaStore} setCapa={setCapaStore} logActivity={logActivity} />;
+        return <ManagerApproval user={currentUser} evidence={evidenceStore} setEvidence={setEvidenceStore} capa={capaStore} setCapa={setCapaStore} logActivity={logActivity} checklists={checklistStore} />;
       case 'executive':
-        return <CEOView evidence={evidenceStore} capa={capaStore} setEvidence={setEvidenceStore} setCapa={setCapaStore} user={currentUser} logActivity={logActivity} />;
+        return <CEOView evidence={evidenceStore} capa={capaStore} setEvidence={setEvidenceStore} setCapa={setCapaStore} user={currentUser} logActivity={logActivity} users={userStore} />;
       case 'admin':
         return <AdminPanel capa={capaStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} checklists={checklistStore} setChecklists={setChecklistStore} />;
+      case 'auditlog':
+        return <AuditLog />;
       default:
         return <Dashboard user={currentUser} evidence={evidenceStore} capa={capaStore} checklists={checklistStore} users={userStore} setActiveTab={setActiveTab} />;
     }

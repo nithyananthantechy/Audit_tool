@@ -3,7 +3,8 @@ import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../co
 import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string }>;
+  onVerifyMfa?: (userId: string, token: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
@@ -11,17 +12,35 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [mfaToken, setMfaToken] = useState('');
+  const [tempUserId, setTempUserId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    const result = await onLogin(email, password);
-    if (!result.success) {
+    if (step === 1) {
+      const result = await onLogin(email, password);
       setIsLoading(false);
-      setError(result.error || 'Invalid credentials');
+      if (!result.success) {
+        setError(result.error || 'Invalid credentials');
+      } else if (result.mfaRequired) {
+        setTempUserId(result.userId || null);
+        setStep(2);
+      }
+    } else {
+      if (onVerifyMfa && tempUserId) {
+        const result = await onVerifyMfa(tempUserId, mfaToken);
+        setIsLoading(false);
+        if (!result.success) {
+          setError(result.error || 'Invalid MFA code');
+        }
+      } else {
+        setIsLoading(false);
+        setError('MFA verification not supported in this context');
+      }
     }
   };
 
@@ -62,50 +81,72 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="px-10 pb-12 space-y-8">
             <div className="space-y-1 text-center animate-in fade-in duration-1000 delay-300">
-              <h2 className="text-lg font-bold text-white/90">Portal Access</h2>
-              <p className="text-white/40 text-xs font-medium italic">Secure verification required for internal access</p>
+              <h2 className="text-lg font-bold text-white/90">{step === 1 ? 'Portal Access' : 'Two-Factor Authentication'}</h2>
+              <p className="text-white/40 text-xs font-medium italic">
+                {step === 1 ? 'Secure verification required for internal access' : 'Enter the 6-digit code from your authenticator app'}
+              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 animate-in slide-in-from-bottom-4 duration-700 delay-200">
-              <div className="space-y-2 group">
-                <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em] pl-1">Corporate Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@corporate.in"
-                    className="w-full pl-14 pr-4 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-sm font-medium text-white outline-none placeholder:text-white/10"
-                    required
-                  />
-                </div>
-              </div>
+              {step === 1 ? (
+                <>
+                  <div className="space-y-2 group">
+                    <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em] pl-1">Corporate Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="user@corporate.in"
+                        className="w-full pl-14 pr-4 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-sm font-medium text-white outline-none placeholder:text-white/10"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2 group">
-                <div className="flex justify-between items-center pl-1">
-                  <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Security Key</label>
-                  <button type="button" className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors font-black uppercase tracking-widest">Recovery?</button>
+                  <div className="space-y-2 group">
+                    <div className="flex justify-between items-center pl-1">
+                      <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Security Key</label>
+                      <button type="button" className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors font-black uppercase tracking-widest">Recovery?</button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full pl-14 pr-14 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-sm font-medium text-white outline-none placeholder:text-white/10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors p-1"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 group animate-in slide-in-from-right-4 duration-500">
+                  <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em] pl-1">6-Digit Code</label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
+                    <input
+                      type="text"
+                      value={mfaToken}
+                      onChange={(e) => setMfaToken(e.target.value)}
+                      placeholder="000000"
+                      className="w-full pl-14 pr-4 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-2xl tracking-widest font-medium text-center text-white outline-none placeholder:text-white/10"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full pl-14 pr-14 py-4 bg-white/[0.03] border border-white/[0.05] rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 focus:bg-white/[0.06] transition-all text-sm font-medium text-white outline-none placeholder:text-white/10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors p-1"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
+              )}
 
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">

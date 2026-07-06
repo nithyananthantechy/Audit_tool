@@ -69,8 +69,10 @@ export interface User {
 
 export interface ChecklistItem {
   id: string;
-  department: Department;
+  department: Department | string;
   task: string;
+  framework?: string;
+  control_clause?: string;
 }
 
 export interface Evidence {
