@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection at:', promise, 'reason:', reason);
+  // Prevent process crash
+});
+
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config({ path: '../.env.production' });
 const sql = neon(process.env.DATABASE_URL);
@@ -86,6 +92,41 @@ const nodemailer = require('nodemailer');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 
+const ENCRYPTION_KEY = process.env.MFA_ENCRYPTION_KEY ? Buffer.from(process.env.MFA_ENCRYPTION_KEY, 'hex') : crypto.randomBytes(32);
+if (!process.env.MFA_ENCRYPTION_KEY) {
+  console.warn('WARNING: MFA_ENCRYPTION_KEY not set. Using random temporary key; existing MFA setups will break on restart.');
+}
+
+function encryptSecret(text) {
+  if (!text) return null;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const authTag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${encrypted}:${authTag}`;
+}
+
+function decryptSecret(encryptedData) {
+  if (!encryptedData) return null;
+  const parts = encryptedData.split(':');
+  if (parts.length !== 3) return encryptedData; // Fallback for old plaintext? We are clearing them anyway.
+  
+  try {
+    const iv = Buffer.from(parts[0], 'hex');
+    const encryptedText = Buffer.from(parts[1], 'hex');
+    const authTag = Buffer.from(parts[2], 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encryptedText);
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch (err) {
+    console.error("MFA Decryption failed");
+    return null;
+  }
+}
+
 const app = express();
 app.set('trust proxy', 1); // Trust Render's proxy to get real user IP
 
@@ -109,6 +150,29 @@ async function rateLimitMiddleware(req, res, next) {
       data.count++;
       if (data.count > RATE_LIMIT) {
         return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+      }
+    }
+  }
+  next();
+}
+
+const authRateLimitStore = new Map();
+const AUTH_RATE_LIMIT = 5;
+const AUTH_RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+
+async function authRateLimitMiddleware(req, res, next) {
+  const key = req.ip || req.connection.remoteAddress;
+  const now = Date.now();
+  if (!authRateLimitStore.has(key)) {
+    authRateLimitStore.set(key, { count: 1, resetTime: now + AUTH_RATE_LIMIT_WINDOW });
+  } else {
+    const data = await authRateLimitStore.get(key);
+    if (now > data.resetTime) {
+      authRateLimitStore.set(key, { count: 1, resetTime: now + AUTH_RATE_LIMIT_WINDOW });
+    } else {
+      data.count++;
+      if (data.count > AUTH_RATE_LIMIT) {
+        return res.status(429).json({ error: 'Too many authentication attempts. Please try again later.' });
       }
     }
   }
@@ -240,9 +304,9 @@ async function initDefaults() {
   const userCount = await db.prepare('SELECT COUNT(*) as count FROM users').get();
   if (Number(userCount.count) === 0) {
     const defaultUsers = [
-    { id: 'u1', name: 'System Admin', email: 'admin@desicrew.in', role: 'Super Admin', department: 'Admin', isActive: 1, password: bcrypt.hashSync('password123', 10), isLocked: 0, loginAttempts: 0 },
-    { id: '9ykf4mwwi', name: 'Gowri Amutha', email: 'gowriamutha@desicrew.in', role: 'Super Admin', department: 'IT', isActive: 1, password: bcrypt.hashSync('Desicrew@2026', 10), isLocked: 0, loginAttempts: 0 },
-    { id: '011egr9ah', name: 'test', email: 'test@desicrew.in', role: 'Contributor', department: 'Operations', isActive: 1, password: bcrypt.hashSync('123', 10), isLocked: 0, loginAttempts: 0 }];
+    { id: 'u1', name: 'System Admin', email: 'admin@nitechspark.in', role: 'Super Admin', department: 'Admin', isActive: 1, password: bcrypt.hashSync('SecureDemo#2026!', 10), isLocked: 0, loginAttempts: 0 },
+    { id: '9ykf4mwwi', name: 'Gowri Amutha', email: 'gowriamutha@nitechspark.in', role: 'Super Admin', department: 'IT', isActive: 1, password: bcrypt.hashSync('SecureDemo#2026!', 10), isLocked: 0, loginAttempts: 0 },
+    { id: '011egr9ah', name: 'test', email: 'test@nitechspark.in', role: 'Contributor', department: 'Operations', isActive: 1, password: bcrypt.hashSync('SecureDemo#2026!', 10), isLocked: 0, loginAttempts: 0 }];
 
     const insertUser = db.prepare('INSERT INTO users (id, name, email, role, department, isActive, password, isLocked, loginAttempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
     for (const u of defaultUsers) {
@@ -277,26 +341,36 @@ function generateToken() {
 
 // Auth middleware
 async function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    const token = authHeader.split(' ')[1];
+    const tokenData = await db.prepare('SELECT * FROM tokens WHERE token = ?').get(token);
+    if (!tokenData) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (tokenData.expiresAt < Date.now()) {
+      await db.prepare('DELETE FROM tokens WHERE token = ?').run(token);
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    const user = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users WHERE id = ?').get(tokenData.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    if (user.role === 'External Auditor' && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+      return res.status(403).json({ error: 'External Auditors have read-only access' });
+    }
+    
+    req.user = user;
+    req.token = token;
+    next();
+  } catch (err) {
+    console.error('Auth Middleware Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
-  const token = authHeader.split(' ')[1];
-  const tokenData = await db.prepare('SELECT * FROM tokens WHERE token = ?').get(token);
-  if (!tokenData) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
-  if (tokenData.expiresAt < Date.now()) {
-    await db.prepare('DELETE FROM tokens WHERE token = ?').run(token);
-    return res.status(401).json({ error: 'Token expired' });
-  }
-  const user = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users WHERE id = ?').get(tokenData.userId);
-  if (!user) {
-    return res.status(401).json({ error: 'User not found' });
-  }
-  req.user = user;
-  req.token = token;
-  next();
 }
 
 // Notification helper functions
@@ -335,13 +409,13 @@ async function sendEmailNotification(userId, type, title, message) {
 
   try {
     await transporter.sendMail({
-      from: `"DesiCrew Audit" <${process.env.SMTP_USER}>`,
+      from: `"NitechSpark Audit" <${process.env.SMTP_USER}>`,
       to: user.email,
       subject: `[Audit Tool] ${title}`,
       html: `<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px;">
                 <h2 style="color: #2563eb;">${title}</h2>
                 <p style="color: #374151; font-size: 14px;">${message}</p>
-                <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">This is an automated notification from DesiCrew Audit & Compliance Manager.</p>
+                <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">This is an automated notification from NitechSpark Audit & Compliance Manager.</p>
             </div>`
     });
   } catch (err) {
@@ -355,7 +429,7 @@ const getDepartmentManagers = async (department) => {
 
 // --- AUTH Endpoints ---
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authRateLimitMiddleware, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -412,7 +486,8 @@ app.post('/api/auth/logout', authMiddleware, async (req, res) => {
 app.post('/api/mfa/setup', authMiddleware, async (req, res) => {
   try {
     const secret = speakeasy.generateSecret({ name: `SparkAudit (${req.user.email})` });
-    await db.prepare('UPDATE users SET mfaSecret = ? WHERE id = ?').run(secret.base32, req.user.id);
+    const encryptedSecret = encryptSecret(secret.base32);
+    await db.prepare('UPDATE users SET mfaSecret = ? WHERE id = ?').run(encryptedSecret, req.user.id);
     
     QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
       if (err) return res.status(500).json({ error: 'Failed to generate QR code' });
@@ -423,15 +498,18 @@ app.post('/api/mfa/setup', authMiddleware, async (req, res) => {
   }
 });
 
-app.post('/api/mfa/verify', async (req, res) => {
+app.post('/api/mfa/verify', authRateLimitMiddleware, async (req, res) => {
   try {
     const { userId, token } = req.body;
     const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (!user.mfaSecret) return res.status(400).json({ error: 'MFA not set up' });
 
+    const decryptedSecret = decryptSecret(user.mfaSecret);
+    if (!decryptedSecret) return res.status(400).json({ error: 'MFA secret corrupted or invalid' });
+
     const verified = speakeasy.totp.verify({
-      secret: user.mfaSecret,
+      secret: decryptedSecret,
       encoding: 'base32',
       token: token,
       window: 1 // Allow 1 step (30s) before/after
@@ -462,13 +540,30 @@ app.use(express.static(path.join(__dirname, '../dist')));
 
 // --- API Endpoints ---
 
-app.get('/api/data', async (req, res) => {
-  const users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users').all();
-  const evidence = await db.prepare('SELECT * FROM evidence').all();
-  const dmax = await db.prepare('SELECT * FROM dmax').all();
-  const activity = await db.prepare('SELECT * FROM activity ORDER BY timestamp DESC LIMIT 1000').all();
-  const checklists = await db.prepare('SELECT * FROM checklists').all();
-  res.json({ users, evidence, dmax, activity, checklists });
+app.get('/api/data', authMiddleware, async (req, res) => {
+  try {
+    const isGlobalRole = ['Super Admin', 'Manager Approver', 'External Auditor'].includes(req.user.role);
+    
+    const users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts FROM users').all();
+    const checklists = await db.prepare('SELECT * FROM checklists').all();
+    
+    let evidence, dmax, activity;
+    if (isGlobalRole) {
+      evidence = await db.prepare('SELECT * FROM evidence').all();
+      dmax = await db.prepare('SELECT * FROM dmax').all();
+      activity = await db.prepare('SELECT * FROM activity ORDER BY timestamp DESC LIMIT 1000').all();
+    } else {
+      const dept = req.user.department;
+      evidence = await db.prepare('SELECT * FROM evidence WHERE department = ?').all(dept);
+      dmax = await db.prepare('SELECT * FROM dmax WHERE department = ?').all(dept);
+      activity = await db.prepare('SELECT * FROM activity WHERE department = ? ORDER BY timestamp DESC LIMIT 1000').all(dept);
+    }
+    
+    res.json({ users, evidence, dmax, activity, checklists });
+  } catch (err) {
+    console.error('Data Fetch Error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 app.post('/api/users', authMiddleware, async (req, res) => {
@@ -515,7 +610,7 @@ app.put('/api/users/:id', authMiddleware, async (req, res) => {
   res.json({ success: true, user });
 });
 
-app.post('/api/activity', async (req, res) => {
+app.post('/api/activity', authMiddleware, async (req, res) => {
   const newActivity = req.body;
   
   try {
@@ -533,13 +628,13 @@ app.post('/api/activity', async (req, res) => {
     await db.prepare('INSERT INTO activity (id, userId, userName, department, action, description, timestamp, hash, previous_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(newActivity.id, newActivity.userId, newActivity.userName, newActivity.department, newActivity.action, newActivity.description, newActivity.timestamp, currentHash, previousHash);
     res.status(201).json({ success: true, hash: currentHash });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to log activity immutably' });
+    res.status(500).json({ error: 'Failed to log activity securely' });
   }
 });
 
 app.post('/api/checklists', authMiddleware, async (req, res) => {
   const checklist = req.body;
-  await db.prepare('INSERT INTO checklists (id, department, task) VALUES (?, ?, ?)').run(checklist.id, checklist.department, checklist.task);
+  await db.prepare('INSERT INTO checklists (id, department, task, framework, control_clause) VALUES (?, ?, ?, ?, ?)').run(checklist.id, checklist.department, checklist.task, checklist.framework || null, checklist.control_clause || null);
   res.json({ success: true });
 });
 

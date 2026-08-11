@@ -25,6 +25,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
   const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'checklists'>('users');
   const [selectedDepartment, setSelectedDepartment] = useState<Department>(Department.HR);
   const [newTask, setNewTask] = useState('');
+  const [newFramework, setNewFramework] = useState('');
+  const [newControlClause, setNewControlClause] = useState('');
   const [reminderSent, setReminderSent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activitySearchTerm, setActivitySearchTerm] = useState('');
@@ -123,9 +125,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
   };
 
   const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -193,10 +195,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-blue-600/20 text-blue-400 flex items-center justify-center rounded-xl font-black text-sm border border-blue-500/20 shadow-lg">
-                          {u.name.charAt(0)}
+                          {(u.name || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{u.name}</p>
+                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{u.name || 'Unknown User'}</p>
                           <p className="text-[10px] text-slate-500 font-medium">{u.email}</p>
                         </div>
                       </div>
@@ -282,7 +284,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                   <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
                     <ListChecks size={18} />
                   </div>
-                  <span className="text-sm font-medium text-slate-300">{item.task}</span>
+                  <div>
+                    <span className="text-sm font-medium text-slate-300 block">{item.task}</span>
+                    {(item.framework || item.control_clause) && (
+                      <div className="flex gap-2 mt-1">
+                        {item.framework && <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-md font-bold">{item.framework}</span>}
+                        {item.control_clause && <span className="text-[10px] bg-slate-500/10 text-slate-400 border border-slate-500/20 px-2 py-0.5 rounded-md font-bold">{item.control_clause}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => {
@@ -316,7 +326,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                 type="text"
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
-                placeholder="Enter new compliance task objective..."
+                placeholder="Task objective..."
+                className="flex-[2] bg-slate-950/50 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-700"
+              />
+              <input
+                type="text"
+                value={newFramework}
+                onChange={(e) => setNewFramework(e.target.value)}
+                placeholder="Framework (e.g. ISO 27001)"
+                className="flex-1 bg-slate-950/50 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-700"
+              />
+              <input
+                type="text"
+                value={newControlClause}
+                onChange={(e) => setNewControlClause(e.target.value)}
+                placeholder="Clause (e.g. A.5.7)"
                 className="flex-1 bg-slate-950/50 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all placeholder:text-slate-700"
               />
               <button
@@ -325,7 +349,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                     const newItem: ChecklistItem = {
                       id: Math.random().toString(36).substr(2, 9),
                       department: selectedDepartment,
-                      task: newTask.trim()
+                      task: newTask.trim(),
+                      framework: newFramework.trim(),
+                      control_clause: newControlClause.trim()
                     };
                     setChecklists(prev => [...prev, newItem]);
                     try {
@@ -333,6 +359,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                       logActivity(user, ActivityType.SYSTEM, `Added new checklist item for ${selectedDepartment}: ${newTask}`);
                     } catch (e) { console.error(e); }
                     setNewTask('');
+                    setNewFramework('');
+                    setNewControlClause('');
                   }
                 }}
                 disabled={!newTask.trim()}

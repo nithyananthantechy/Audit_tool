@@ -8,7 +8,7 @@ describe('Users API', () => {
   beforeAll(async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@desicrew.in', password: 'password123' });
+      .send({ email: 'admin@nitechspark.in', password: 'password123' });
     token = res.body.token;
   });
 
@@ -28,7 +28,7 @@ describe('Users API', () => {
       const newUser = {
         id: 'test-user-' + crypto.randomBytes(4).toString('hex'),
         name: 'Test User',
-        email: 'testuser' + Date.now() + '@desicrew.in',
+        email: 'testuser' + Date.now() + '@nitechspark.in',
         role: 'Contributor',
         department: 'Operations',
         isActive: true,
@@ -48,7 +48,7 @@ describe('Users API', () => {
       const newUser = {
         id: 'test-user-' + crypto.randomBytes(4).toString('hex'),
         name: 'Test User',
-        email: 'admin@desicrew.in',
+        email: 'admin@nitechspark.in',
         role: 'Contributor',
         department: 'Operations',
         isActive: true,
@@ -116,7 +116,7 @@ describe('Users API', () => {
   describe('DELETE /api/users/:id', () => {
     it('should delete user', async () => {
       const deleteId = 'test-user-' + crypto.randomBytes(4).toString('hex');
-      
+
       await request(app)
         .post('/api/users')
         .set('Authorization', `Bearer ${token}`)

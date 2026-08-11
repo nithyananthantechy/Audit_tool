@@ -36,9 +36,9 @@ const AuditLog: React.FC = () => {
   }, []);
 
   const filteredLogs = logs.filter(l => 
-    l.userName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    l.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    l.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.userName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (l.action || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (l.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (l.hash && l.hash.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -48,7 +48,7 @@ const AuditLog: React.FC = () => {
         <div>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
             <Shield className="w-8 h-8 text-blue-500" />
-            Immutable Audit Ledger
+            Tamper-Evident Audit Ledger
           </h2>
           <p className="text-slate-400 mt-2 text-sm flex items-center gap-2">
             <Lock className="w-4 h-4 text-emerald-400" />
@@ -94,11 +94,11 @@ const AuditLog: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold">
-                          {log.userName.charAt(0)}
+                          {(log.userName || 'U').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">{log.userName}</p>
-                          <p className="text-xs text-slate-500">{log.department}</p>
+                          <p className="text-sm font-medium text-white">{log.userName || 'Unknown User'}</p>
+                          <p className="text-xs text-slate-500">{log.department || 'Unknown Dept'}</p>
                         </div>
                       </div>
                     </td>

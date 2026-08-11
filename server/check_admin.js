@@ -6,11 +6,9 @@ async function run() {
   try {
     const hashedPassword = await bcrypt.hash('password123', 10);
     await sql`
-      INSERT INTO users (id, name, email, role, department, isactive, password, islocked, loginattempts)
-      VALUES ('admin1', 'Admin User', 'admin@nitechspark.in', 'Super Admin', 'IT', 1, ${hashedPassword}, 0, 0)
-      ON CONFLICT (email) DO UPDATE SET password = ${hashedPassword}, role = 'Super Admin';
+      UPDATE users SET password = ${hashedPassword}, islocked = 0, loginattempts = 0 WHERE email = 'admin@nitechspark.in';
     `;
-    console.log("Admin user created/updated!");
+    console.log("Admin user unlocked and password set to password123!");
   } catch(e) {
     console.error(e);
   }

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Deployment Script for DesiCrew Audit Compliance Manager on Ubuntu with Nginx
+# Deployment Script for nitechspark Audit Compliance Manager on Ubuntu with Nginx
 
 # Configuration
-APP_DIR="/var/www/desicrew-compliance"
+APP_DIR="/var/www/nitechspark-compliance"
 NGINX_CONFIG_SOURCE="nginx/ubuntu-site-config"
-SITE_NAME="desicrew-compliance"
+SITE_NAME="nitechspark-compliance"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -94,11 +94,11 @@ else
 fi
 
 # 4. Set Permissions
-# Verify where we are. If we are in /var/www/desicrew-compliance, these paths work.
+# Verify where we are. If we are in /var/www/nitechspark-compliance, these paths work.
 LOCAL_DIR=$(pwd)
 if [[ "$LOCAL_DIR" != *"/var/www/"* ]]; then
      echo -e "${RED}WARNING: You seem to be running this script from $LOCAL_DIR.${NC}"
-     echo "The Nginx config points to /var/www/desicrew-compliance/dist."
+     echo "The Nginx config points to /var/www/nitechspark-compliance/dist."
      echo "If you are not deploying to that path, please update the Nginx config."
 fi
 

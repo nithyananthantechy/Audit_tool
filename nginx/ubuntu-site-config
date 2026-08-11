@@ -3,7 +3,7 @@ server {
     server_name _;  # Replace with your domain or IP address
 
     # Path to the build output directory
-    root /var/www/desicrew-compliance/dist;
+    root /var/www/nitechspark-compliance/dist;
     index index.html;
 
     # Gzip compression for faster load times

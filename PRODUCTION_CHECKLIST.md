@@ -102,9 +102,9 @@ scp -r dist user@your-server:/var/www/your-app/
 - [ ] Enable HTTPS (via nginx or cloud provider)
 - [ ] Use App Password for Gmail SMTP
 - [ ] Rotate all default passwords:
-  - `admin@desicrew.in` / `password123`
-  - `gowriamutha@desicrew.in` / `Desicrew@2026`
-  - `test@desicrew.in` / `123`
+  - `admin@nitechspark.in` / `password123`
+  - `gowriamutha@nitechspark.in` / `nitechspark@2026`
+  - `test@nitechspark.in` / `123`
 
 ## 7. Monitoring & Analytics
 

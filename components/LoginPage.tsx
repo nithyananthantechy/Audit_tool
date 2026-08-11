@@ -15,6 +15,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [mfaToken, setMfaToken] = useState('');
   const [tempUserId, setTempUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

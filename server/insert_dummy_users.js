@@ -4,10 +4,10 @@ const bcrypt = require('bcrypt');
 
 async function run() {
   const users = [
-    { id: 'it_dept', name: 'IT Test User', email: 'it@desicrew.in', role: 'Contributor', dept: 'IT', pass: 'password123' },
-    { id: 'hr_dept', name: 'HR Test User', email: 'hr@desicrew.in', role: 'Contributor', dept: 'HR', pass: 'password123' },
-    { id: 'finance_dept', name: 'Finance Test User', email: 'finance@desicrew.in', role: 'Contributor', dept: 'Finance', pass: 'password123' },
-    { id: 'security_dept', name: 'Security Test User', email: 'security@desicrew.in', role: 'Contributor', dept: 'Security', pass: 'password123' }
+    { id: 'it_dept', name: 'IT Test User', email: 'it@nitechspark.in', role: 'Contributor', dept: 'IT', pass: 'SecureDemo#2026!' },
+    { id: 'hr_dept', name: 'HR Test User', email: 'hr@nitechspark.in', role: 'Contributor', dept: 'HR', pass: 'SecureDemo#2026!' },
+    { id: 'finance_dept', name: 'Finance Test User', email: 'finance@nitechspark.in', role: 'Contributor', dept: 'Finance', pass: 'SecureDemo#2026!' },
+    { id: 'security_dept', name: 'Security Test User', email: 'security@nitechspark.in', role: 'Contributor', dept: 'Security', pass: 'SecureDemo#2026!' }
   ];
 
   for (const u of users) {

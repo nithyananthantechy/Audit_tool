@@ -1,6 +1,6 @@
 # Deploy to Ubuntu Server with Nginx (Automated)
 
-This guide explains how to deploy the DesiCrew Audit Compliance Manager application on your Ubuntu server using the provided automation script.
+This guide explains how to deploy the nitechspark Audit Compliance Manager application on your Ubuntu server using the provided automation script.
 
 ## 1. Prerequisites (Ubuntu Server)
 
@@ -18,9 +18,9 @@ You can deploy by cloning your repository directly to the web root.
 
 ```bash
 # 1. Navigate to the web root or create directory
-sudo mkdir -p /var/www/desicrew-compliance
-sudo chown -R $USER:$USER /var/www/desicrew-compliance
-cd /var/www/desicrew-compliance
+sudo mkdir -p /var/www/nitechspark-compliance
+sudo chown -R $USER:$USER /var/www/nitechspark-compliance
+cd /var/www/nitechspark-compliance
 
 # 2. Clone your repository (replace with your actual repo URL)
 git clone <your-repo-url> .
@@ -46,7 +46,7 @@ The application now uses a lightweight Node.js backend to sync data between user
 
 1.  **Navigate to the server directory:**
     ```bash
-    cd /var/www/desicrew-compliance/server
+    cd /var/www/nitechspark-compliance/server
     ```
 
 2.  **Install dependencies:**
@@ -82,7 +82,7 @@ npm run build
 ## 4. Verify Deployment
 
 1.  Open your web browser and navigate to your server's IP address (`http://your-server-ip`).
-2.  Login with `admin@desicrew.in` / `password123`.
+2.  Login with `admin@nitechspark.in` / `password123`.
 3.  Check if the Dashboard loads correctly.
 
 ## Troubleshooting
@@ -98,5 +98,5 @@ npm run build
 -   **Permissions**:
     Ensure the `dist` folder is readable by Nginx (the script handles this, but if you manually change files, you might need to re-run):
     ```bash
-    sudo chown -R www-data:www-data /var/www/desicrew-compliance/dist
+    sudo chown -R www-data:www-data /var/www/nitechspark-compliance/dist
     ```
