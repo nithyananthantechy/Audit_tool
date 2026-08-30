@@ -1104,8 +1104,8 @@ async function initDefaults() {
       }
       console.log('[BOOTSTRAP] Initial administrative users seeded.');
     } else {
-      // Ensure seed admin password matches defaultPassword in dev mode
-      await db.prepare('UPDATE users SET password = ?, isLocked = 0, isActive = 1 WHERE LOWER(email) IN (?, ?)').run(initialHash, 'admin@nitechspark.in', 'orgadmin@apex.com');
+      // Ensure seed admin password matches defaultPassword in dev mode and disable MFA blocking
+      await db.prepare('UPDATE users SET password = ?, isLocked = 0, isActive = 1, mfaEnabled = 0, mfaSecret = NULL WHERE LOWER(email) IN (?, ?, ?, ?)').run(initialHash, 'admin@nitechspark.in', 'orgadmin@apex.com', 'hr@nskgroups.com', 'hr@nitechspark.in');
       await db.prepare("UPDATE organizations SET name = 'NitechSpark Technologies', contactName = 'NitechSpark Platform Owner' WHERE id IN ('org-niutechspark', 'org-nitechspark')").run();
     }
 
