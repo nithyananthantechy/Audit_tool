@@ -1370,14 +1370,26 @@ function requireRole(...allowedRoles) {
   };
 }
 
-// Notification Helper
-async function sendNotification(userId, type, title, message, relatedId = null, relatedType = null) {
+// Notification Helper with Organization Tagging
+async function sendNotification(userId, type, title, message, relatedId = null, relatedType = null, organizationId = null) {
   try {
+    let orgTag = '';
+    const targetUser = await db.prepare('SELECT u.organizationId, o.name as orgName FROM users u LEFT JOIN organizations o ON u.organizationId = o.id WHERE u.id = ?').get(userId);
+    
+    if (organizationId) {
+      const org = await db.prepare('SELECT name FROM organizations WHERE id = ?').get(organizationId);
+      if (org && org.name) orgTag = `[${org.name}] `;
+    } else if (targetUser && targetUser.orgName) {
+      orgTag = `[${targetUser.orgName}] `;
+    }
+
+    const finalTitle = title.startsWith('[') ? title : `${orgTag}${title}`;
+
     const notification = {
       id: crypto.randomBytes(8).toString('hex'),
       userId,
       type,
-      title,
+      title: finalTitle,
       message,
       isRead: 0,
       createdAt: new Date().toISOString(),
@@ -1397,7 +1409,7 @@ async function sendNotification(userId, type, title, message, relatedId = null, 
       notification.relatedType
     );
 
-    await sendEmailNotification(userId, type, title, message);
+    await sendEmailNotification(userId, type, finalTitle, message);
     return notification;
   } catch (err) {
     console.error('[NOTIFICATION ERROR]', err.message);
@@ -1435,8 +1447,11 @@ async function sendEmailNotification(userId, type, title, message) {
   }
 }
 
-const getDepartmentAuditors = async (department) => {
-  return await db.prepare("SELECT id, name FROM users WHERE role IN ('Super Admin', 'Internal Auditor') AND isActive = 1").all();
+const getDepartmentAuditors = async (department, organizationId = null) => {
+  if (organizationId) {
+    return await db.prepare("SELECT id, name, organizationId FROM users WHERE role IN ('Super Admin', 'Internal Auditor', 'Org Admin') AND (organizationId = ? OR role = 'Super Admin') AND isActive = 1").all(organizationId);
+  }
+  return await db.prepare("SELECT id, name, organizationId FROM users WHERE role IN ('Super Admin', 'Internal Auditor', 'Org Admin') AND isActive = 1").all();
 };
 
 // ============================================================================
@@ -2146,10 +2161,20 @@ app.post('/api/evidence', authMiddleware, async (req, res) => {
       evidence.status || 'Submitted'
     );
 
-    // Notify Auditors
-    const auditors = await getDepartmentAuditors(evidence.department || req.user.department);
+    // Notify Auditors with Organization Name Prefix
+    const userOrg = await db.prepare('SELECT o.name FROM users u LEFT JOIN organizations o ON u.organizationId = o.id WHERE u.id = ?').get(req.user.id);
+    const orgName = (userOrg && userOrg.name) ? userOrg.name : 'Client Organization';
+    const auditors = await getDepartmentAuditors(evidence.department || req.user.department, req.user.organizationId);
     auditors.forEach((auditor) => {
-      sendNotification(auditor.id, 'submission', 'New Evidence Submitted', `${req.user.name} submitted compliance evidence for verification.`);
+      sendNotification(
+        auditor.id,
+        'submission',
+        `[${orgName}] New Evidence Submitted`,
+        `[${orgName}] ${req.user.name} submitted compliance evidence for verification.`,
+        id,
+        'evidence',
+        req.user.organizationId
+      );
     });
 
     res.status(201).json({ success: true, id });

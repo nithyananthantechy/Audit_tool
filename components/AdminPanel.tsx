@@ -50,12 +50,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [newPasswordValue, setNewPasswordValue] = useState('');
   const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
+  const [orgList, setOrgList] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.getOrganizations()
+      .then(res => {
+        if (res && res.organizations) setOrgList(res.organizations);
+      })
+      .catch(err => console.error('Failed to load organizations:', err));
+  }, []);
 
   const INITIAL_FORM_DATA: Partial<User> = {
     name: '',
     email: '',
     role: Role.CONTRIBUTOR,
     department: Department.OPERATIONS,
+    organizationId: user.organizationId || 'org-niutechspark',
     isActive: true,
     isLocked: false,
     loginAttempts: 0,
@@ -145,7 +155,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
       const newUser: User = {
         id: crypto.randomUUID(),
         ...(formData as User),
-        organizationId: user.organizationId,
+        organizationId: formData.organizationId || user.organizationId || 'org-niutechspark',
         password: newPasswordValue.trim()
       };
       // Optimistic update
@@ -310,48 +320,57 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
               <thead>
                 <tr className="bg-white/[0.02] text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5">
                   <th className="px-8 py-5">Corporate Entity</th>
+                  <th className="px-8 py-5">Organization Node</th>
                   <th className="px-8 py-5">Access Permission</th>
                   <th className="px-8 py-5">Operational Branch</th>
                   <th className="px-8 py-5 text-right">Verification</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filteredUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-white/[0.01] transition-colors group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-blue-600/20 text-blue-400 flex items-center justify-center rounded-xl font-black text-sm border border-blue-500/20 shadow-lg">
-                          {(u.name || 'U').charAt(0).toUpperCase()}
+                {filteredUsers.map((u) => {
+                  const targetOrg = orgList.find(o => o.id === u.organizationId);
+                  const orgDisplayName = targetOrg ? targetOrg.name : (u.organizationId === 'org-e10d44fdcedb' ? 'NSK Groups' : u.organizationId === 'org-apex' ? 'Apex Global' : 'NitechSpark');
+                  return (
+                    <tr key={u.id} className="hover:bg-white/[0.01] transition-colors group">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-600/20 text-blue-400 flex items-center justify-center rounded-xl font-black text-sm border border-blue-500/20 shadow-lg">
+                            {(u.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{u.name || 'Unknown User'}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">{u.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors">{u.name || 'Unknown User'}</p>
-                          <p className="text-[10px] text-slate-500 font-medium">{u.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5 bg-white/[0.03] text-slate-400`}>
-                        {u.role}
-                      </span>
-                      {Boolean(u.isLocked) && (
-                        <span className="ml-2 px-3 py-1.5 bg-red-500/10 text-red-500 text-[9px] font-black rounded-full uppercase tracking-widest border border-red-500/20 animate-pulse">
-                          Node Locked
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-2.5 py-1 rounded-md border border-cyan-500/20">
+                          {orgDisplayName}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-400/5 px-2.5 py-1 rounded-md border border-slate-400/10">
-                        {u.department}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => { setEditingUser(u); setFormData({ name: u.name, email: u.email, role: u.role, department: u.department, isActive: u.isActive, isLocked: u.isLocked, loginAttempts: u.loginAttempts, password: u.password }); setIsModalOpen(true); }}
-                          className="text-[10px] font-black text-blue-400 hover:text-white hover:bg-blue-600 px-4 py-2 rounded-xl transition-all border border-blue-500/20 uppercase tracking-widest"
-                        >
-                          Modify Permissions
-                        </button>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5 bg-white/[0.03] text-slate-400`}>
+                          {u.role}
+                        </span>
+                        {Boolean(u.isLocked) && (
+                          <span className="ml-2 px-3 py-1.5 bg-red-500/10 text-red-500 text-[9px] font-black rounded-full uppercase tracking-widest border border-red-500/20 animate-pulse">
+                            Node Locked
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-400/5 px-2.5 py-1 rounded-md border border-slate-400/10">
+                          {u.department}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => { setEditingUser(u); setFormData({ name: u.name, email: u.email, role: u.role, department: u.department, organizationId: u.organizationId, isActive: u.isActive, isLocked: u.isLocked, loginAttempts: u.loginAttempts, password: u.password }); setIsModalOpen(true); }}
+                            className="text-[10px] font-black text-blue-400 hover:text-white hover:bg-blue-600 px-4 py-2 rounded-xl transition-all border border-blue-500/20 uppercase tracking-widest"
+                          >
+                            Modify Permissions
+                          </button>
                         <button
                           onClick={async () => {
                             if (u.id === user.id) {
@@ -377,7 +396,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
@@ -609,6 +629,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                     className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all appearance-none"
                   >
                     {Object.values(Role).map(r => <option key={r} value={r} className="bg-slate-900">{r}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] pl-1 flex items-center gap-1.5">
+                    <Building2 size={12} /> Organization Node (Tenant)
+                  </label>
+                  <select
+                    value={formData.organizationId || user.organizationId || 'org-niutechspark'}
+                    onChange={e => setFormData({ ...formData, organizationId: e.target.value })}
+                    className="w-full bg-slate-950 border border-blue-500/30 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none"
+                  >
+                    {orgList.length > 0 ? (
+                      orgList.map(o => <option key={o.id} value={o.id} className="bg-slate-900">{o.name} ({o.code})</option>)
+                    ) : (
+                      <>
+                        <option value="org-niutechspark" className="bg-slate-900">NitechSpark Technologies</option>
+                        <option value="org-e10d44fdcedb" className="bg-slate-900">NSK Groups</option>
+                        <option value="org-apex" className="bg-slate-900">Apex Global Enterprises</option>
+                      </>
+                    )}
                   </select>
                 </div>
                 <div className="space-y-3">
