@@ -262,3 +262,201 @@ export interface AuditIntegrityResult {
   firstFailure?: string;
   failureType?: string;
 }
+
+export interface AuditRecord {
+  id: string;
+  auditId: string;
+  organizationId: string;
+  name: string;
+  type: 'ISO 27001 Audit' | 'DPDP Privacy Audit' | 'SOC 2 Audit' | 'CERT-In Compliance' | string;
+  description?: string;
+  leadAuditor: string;
+  auditTeam?: string[];
+  period: string;
+  startDate: string;
+  endDate: string;
+  status: 'Draft' | 'Planning' | 'Scheduled' | 'Evidence Collection' | 'Fieldwork' | 'Testing' | 'Findings Review' | 'Management Review' | 'Remediation' | 'Retest' | 'Closed' | string;
+  scopeId?: string;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuditScope {
+  id: string;
+  auditId: string;
+  organizationId: string;
+  inScopeDepartments?: string[];
+  businessUnits?: string[];
+  locations?: string[];
+  inScopeApps?: string[];
+  servers?: string[];
+  databases?: string[];
+  cloudEnvs?: string[];
+  saas?: string[];
+  vendors?: string[];
+  dataStores?: string[];
+  outOfScope?: string[];
+  exclusions?: string[];
+  justification?: string;
+  createdAt?: string;
+}
+
+export interface FrameworkRecord {
+  id: string;
+  frameworkId: string;
+  name: string;
+  version: string;
+  description?: string;
+  source?: string;
+  effectiveDate?: string;
+  status?: string;
+  organizationId?: string;
+}
+
+export interface RequirementRecord {
+  id: string;
+  requirementId: string;
+  frameworkId: string;
+  clause: string;
+  title: string;
+  description?: string;
+  guidance?: string;
+  version?: string;
+  applicability?: 'Applicable' | 'Not Applicable' | 'Conditional' | string;
+}
+
+export interface EvidenceRequest {
+  id: string;
+  requestId: string;
+  auditId: string;
+  controlId: string;
+  department: Department | string;
+  evidenceRequired: string;
+  assignedTo: string;
+  priority: 'High' | 'Medium' | 'Low' | string;
+  dueDate: string;
+  status: 'Requested' | 'Assigned' | 'In Progress' | 'Submitted' | 'Under Review' | 'Accepted' | 'Rejected' | 'Resubmission Required' | 'Closed' | 'Overdue' | string;
+  organizationId: string;
+  createdAt: string;
+}
+
+export interface ControlTest {
+  id: string;
+  testId: string;
+  auditId: string;
+  requirementId?: string;
+  controlId: string;
+  tester: string;
+  testProcedure: string;
+  populationSize: number;
+  sampleSize: number;
+  samplingMethod: 'Random' | 'Risk-Based' | 'Targeted' | 'Judgmental' | string;
+  testDate: string;
+  observation?: string;
+  evidenceRefs?: string;
+  result: 'Pass' | 'Partial Pass' | 'Fail' | 'Not Tested' | 'Not Applicable' | string;
+  organizationId: string;
+  createdAt?: string;
+}
+
+export interface RetestRecord {
+  id: string;
+  findingId: string;
+  capaId?: string;
+  retestDate: string;
+  tester: string;
+  procedure: string;
+  evidenceRefs?: string;
+  result: 'Pass' | 'Fail' | string;
+  comments?: string;
+  organizationId?: string;
+  createdAt?: string;
+}
+
+export interface PolicyRecord {
+  id: string;
+  policyId: string;
+  title: string;
+  version: string;
+  category: string;
+  department?: string;
+  owner: string;
+  status: string;
+  documentUrl?: string;
+  effectiveDate?: string;
+  reviewDate?: string;
+  acknowledgementsCount?: number;
+  organizationId: string;
+}
+
+export interface VendorRecord {
+  id: string;
+  vendorId: string;
+  name: string;
+  serviceProvided: string;
+  dataAccess: string;
+  criticality: string;
+  securityAssessmentStatus: string;
+  contractEndDate?: string;
+  dpaSigned: boolean | number;
+  riskLevel: string;
+  lastReviewDate?: string;
+  organizationId: string;
+}
+
+export interface AssetRecord {
+  id: string;
+  assetId: string;
+  name: string;
+  category: string;
+  department: string;
+  owner: string;
+  criticality: string;
+  environment: string;
+  location?: string;
+  dataClassification: string;
+  status: string;
+  organizationId: string;
+}
+
+export interface DataAssetRecord {
+  id: string;
+  category: string;
+  personalDataTypes: string;
+  dataPrincipal: string;
+  purpose: string;
+  collectionSource?: string;
+  processingActivity?: string;
+  system?: string;
+  storageLocation?: string;
+  retentionPeriod?: string;
+  deletionMethod?: string;
+  organizationId: string;
+}
+
+export interface IncidentRecord {
+  id: string;
+  incidentId: string;
+  title: string;
+  type: string;
+  severity: string;
+  detectedAt: string;
+  reportedBy: string;
+  affectedAsset?: string;
+  containmentDetails?: string;
+  rootCause?: string;
+  status: string;
+  linkedFindingId?: string;
+  linkedCapaId?: string;
+  organizationId: string;
+}
+
+export interface TraceabilityGraph {
+  finding: Finding;
+  control: Control;
+  risk?: RiskItem;
+  retests: RetestRecord[];
+  tests: ControlTest[];
+  evidence: Evidence[];
+}

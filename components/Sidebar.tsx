@@ -9,7 +9,13 @@ import {
   ShieldCheck,
   Users,
   Building2,
-  Fingerprint
+  Fingerprint,
+  Target,
+  BookOpen,
+  Inbox,
+  Activity,
+  Lock,
+  Server
 } from 'lucide-react';
 import { NITECHSPARK_LOGO, COMPANY_NAME, APP_NAME } from '../constants';
 
@@ -25,7 +31,13 @@ const Sidebar: React.FC<SidebarProps> = ({ role, department, activeTab, setActiv
   const menuItems = [
     { id: 'admin', label: 'Admin Panel', icon: Users, roles: [Role.SUPER_ADMIN, Role.ORG_ADMIN] },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'audits', label: 'Audits & Scope', icon: Target, roles: [Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN, Role.MANAGER, Role.HR] },
+    { id: 'frameworks', label: 'Framework Library', icon: BookOpen, roles: [Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN, Role.MANAGER, Role.HR] },
     { id: 'governance', label: 'Governance & Risk', icon: ShieldCheck, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'requests', label: 'Evidence Requests', icon: Inbox, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'testing', label: 'Control Testing & Sampling', icon: Activity, roles: [Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'dpdp', label: 'DPDP Privacy Hub', icon: Lock, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'assets', label: 'Assets & Vendor Risk', icon: Server, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
     { id: 'dept_hub', label: `${department} Hub`, icon: Building2, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
     { id: 'checklists', label: 'My Checklists', icon: ClipboardCheck, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
     { id: 'capa', label: 'CAPA Reports', icon: FileText, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },

@@ -105,7 +105,30 @@ const inMemoryTables = {
   controls: [],
   risks: [],
   findings: [],
-  audit_schedules: []
+  audit_schedules: [],
+  audits: [],
+  audit_scopes: [],
+  frameworks: [],
+  requirements: [],
+  control_mappings: [],
+  applicability_assessments: [],
+  audit_questions: [],
+  evidence_requests: [],
+  evidence_versions: [],
+  samples: [],
+  control_tests: [],
+  risk_treatments: [],
+  risk_history: [],
+  retests: [],
+  policies: [],
+  policy_acknowledgements: [],
+  training: [],
+  vendors: [],
+  assets: [],
+  data_assets: [],
+  privacy_requests: [],
+  incidents: [],
+  regulatory_obligations: []
 };
 
 class MockDatabase {
@@ -168,7 +191,75 @@ class MockDatabase {
       maxusers: 'maxUsers',
       startdate: 'startDate',
       enddate: 'endDate',
-      organizationid: 'organizationId'
+      organizationid: 'organizationId',
+      frameworkid: 'frameworkId',
+      requirementid: 'requirementId',
+      leadauditor: 'leadAuditor',
+      auditteam: 'auditTeam',
+      createdby: 'createdBy',
+      scopeid: 'scopeId',
+      inscopedepartments: 'inScopeDepartments',
+      businessunits: 'businessUnits',
+      inscopeapps: 'inScopeApps',
+      cloudenvs: 'cloudEnvs',
+      datastores: 'dataStores',
+      outofscope: 'outOfScope',
+      effectivedate: 'effectiveDate',
+      evidencerequired: 'evidenceRequired',
+      riskiffailed: 'riskIfFailed',
+      requestid: 'requestId',
+      testprocedure: 'testProcedure',
+      populationsize: 'populationSize',
+      samplesize: 'sampleSize',
+      samplingmethod: 'samplingMethod',
+      testdate: 'testDate',
+      evidencerefs: 'evidenceRefs',
+      inherentlikelihood: 'inherentLikelihood',
+      inherentimpact: 'inherentImpact',
+      inherentscore: 'inherentScore',
+      residuallikelihood: 'residualLikelihood',
+      residualimpact: 'residualImpact',
+      residualscore: 'residualScore',
+      treatmenttype: 'treatmentType',
+      treatmentplan: 'treatmentPlan',
+      retestdate: 'retestDate',
+      documenturl: 'documentUrl',
+      acknowledgementscount: 'acknowledgementsCount',
+      acknowledgedat: 'acknowledgedAt',
+      employeeid: 'employeeId',
+      employeename: 'employeeName',
+      assigneddate: 'assignedDate',
+      completiondate: 'completionDate',
+      certificateurl: 'certificateUrl',
+      expirydate: 'expiryDate',
+      vendorid: 'vendorId',
+      serviceprovided: 'serviceProvided',
+      dataaccess: 'dataAccess',
+      securityassessmentstatus: 'securityAssessmentStatus',
+      contractenddate: 'contractEndDate',
+      dpasigned: 'dpaSigned',
+      risklevel: 'riskLevel',
+      lastreviewdate: 'lastReviewDate',
+      assetid: 'assetId',
+      dataclassification: 'dataClassification',
+      personaldatatypes: 'personalDataTypes',
+      dataprincipal: 'dataPrincipal',
+      collectionsource: 'collectionSource',
+      processingactivity: 'processingActivity',
+      storagelocation: 'storageLocation',
+      retentionperiod: 'retentionPeriod',
+      deletionmethod: 'deletionMethod',
+      dataprincipalname: 'dataPrincipalName',
+      requesttype: 'requestType',
+      requestdate: 'requestDate',
+      incidentid: 'incidentId',
+      detectedat: 'detectedAt',
+      reportedby: 'reportedBy',
+      affectedasset: 'affectedAsset',
+      containmentdetails: 'containmentDetails',
+      linkedfindingid: 'linkedFindingId',
+      linkedcapaid: 'linkedCapaId',
+      isapplicable: 'isApplicable'
     };
 
     const mapRow = (row) => {
@@ -191,17 +282,40 @@ class MockDatabase {
       let table = 'users';
       if (/\bfrom\s+organizations\b|\binto\s+organizations\b|\bupdate\s+organizations\b|\bdelete\s+from\s+organizations\b|\borganizations\s*\(/i.test(q)) table = 'organizations';
       else if (/\bfrom\s+users\b|\binto\s+users\b|\bupdate\s+users\b|\bdelete\s+from\s+users\b|\busers\s*\(/i.test(q)) table = 'users';
+      else if (/\bevidence_requests\b/i.test(q)) table = 'evidence_requests';
+      else if (/\bevidence_versions\b/i.test(q)) table = 'evidence_versions';
       else if (/\bevidence\b/i.test(q)) table = 'evidence';
       else if (/\bcapa\b/i.test(q)) table = 'capa';
       else if (/\btokens\b/i.test(q)) table = 'tokens';
       else if (/\bactivity\b/i.test(q)) table = 'activity';
       else if (/\bnotification_preferences\b/i.test(q)) table = 'notification_preferences';
       else if (/\bnotifications\b/i.test(q)) table = 'notifications';
+      else if (/\bcontrol_mappings\b/i.test(q)) table = 'control_mappings';
+      else if (/\bcontrol_tests\b/i.test(q)) table = 'control_tests';
       else if (/\bcontrols\b/i.test(q)) table = 'controls';
+      else if (/\brisk_treatments\b/i.test(q)) table = 'risk_treatments';
+      else if (/\brisk_history\b/i.test(q)) table = 'risk_history';
       else if (/\brisks\b/i.test(q)) table = 'risks';
       else if (/\bfindings\b/i.test(q)) table = 'findings';
       else if (/\bchecklists\b/i.test(q)) table = 'checklists';
       else if (/\baudit_schedules\b/i.test(q)) table = 'audit_schedules';
+      else if (/\baudit_scopes\b/i.test(q)) table = 'audit_scopes';
+      else if (/\baudit_questions\b/i.test(q)) table = 'audit_questions';
+      else if (/\baudits\b/i.test(q)) table = 'audits';
+      else if (/\bframeworks\b/i.test(q)) table = 'frameworks';
+      else if (/\brequirements\b/i.test(q)) table = 'requirements';
+      else if (/\bapplicability_assessments\b/i.test(q)) table = 'applicability_assessments';
+      else if (/\bsamples\b/i.test(q)) table = 'samples';
+      else if (/\bretests\b/i.test(q)) table = 'retests';
+      else if (/\bpolicy_acknowledgements\b/i.test(q)) table = 'policy_acknowledgements';
+      else if (/\bpolicies\b/i.test(q)) table = 'policies';
+      else if (/\btraining\b/i.test(q)) table = 'training';
+      else if (/\bvendors\b/i.test(q)) table = 'vendors';
+      else if (/\bdata_assets\b/i.test(q)) table = 'data_assets';
+      else if (/\bassets\b/i.test(q)) table = 'assets';
+      else if (/\bprivacy_requests\b/i.test(q)) table = 'privacy_requests';
+      else if (/\bincidents\b/i.test(q)) table = 'incidents';
+      else if (/\bregulatory_obligations\b/i.test(q)) table = 'regulatory_obligations';
       else if (/\bdmax\b/i.test(q)) table = 'dmax';
 
       if (!inMemoryTables[table]) inMemoryTables[table] = [];
@@ -573,6 +687,312 @@ async function initDefaults() {
         deadline SMALLINT DEFAULT 1,
         assignment SMALLINT DEFAULT 1
     );
+    CREATE TABLE IF NOT EXISTS audits (
+        id TEXT PRIMARY KEY,
+        auditId TEXT UNIQUE NOT NULL,
+        organizationId TEXT NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        description TEXT,
+        leadAuditor TEXT,
+        auditTeam TEXT,
+        period TEXT,
+        startDate TEXT,
+        endDate TEXT,
+        status TEXT DEFAULT 'Draft',
+        scopeId TEXT,
+        createdBy TEXT,
+        createdAt TEXT,
+        updatedAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS audit_scopes (
+        id TEXT PRIMARY KEY,
+        auditId TEXT UNIQUE NOT NULL,
+        organizationId TEXT NOT NULL,
+        inScopeDepartments TEXT,
+        businessUnits TEXT,
+        locations TEXT,
+        inScopeApps TEXT,
+        servers TEXT,
+        databases TEXT,
+        cloudEnvs TEXT,
+        saas TEXT,
+        vendors TEXT,
+        dataStores TEXT,
+        outOfScope TEXT,
+        exclusions TEXT,
+        justification TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS frameworks (
+        id TEXT PRIMARY KEY,
+        frameworkId TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        version TEXT NOT NULL,
+        description TEXT,
+        source TEXT,
+        effectiveDate TEXT,
+        status TEXT DEFAULT 'Active',
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS requirements (
+        id TEXT PRIMARY KEY,
+        requirementId TEXT UNIQUE NOT NULL,
+        frameworkId TEXT NOT NULL,
+        clause TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        guidance TEXT,
+        version TEXT,
+        applicability TEXT DEFAULT 'Applicable',
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS control_mappings (
+        id TEXT PRIMARY KEY,
+        controlId TEXT NOT NULL,
+        requirementId TEXT NOT NULL,
+        frameworkId TEXT NOT NULL,
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS applicability_assessments (
+        id TEXT PRIMARY KEY,
+        auditId TEXT NOT NULL,
+        requirementId TEXT NOT NULL,
+        controlId TEXT,
+        status TEXT NOT NULL,
+        justification TEXT NOT NULL,
+        auditor TEXT NOT NULL,
+        approver TEXT,
+        reviewDate TEXT,
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS audit_questions (
+        id TEXT PRIMARY KEY,
+        controlId TEXT NOT NULL,
+        question TEXT NOT NULL,
+        guidance TEXT,
+        expectedAnswer TEXT,
+        evidenceRequired TEXT,
+        mandatory SMALLINT DEFAULT 1,
+        riskIfFailed TEXT,
+        organizationId TEXT
+    );
+    CREATE TABLE IF NOT EXISTS evidence_requests (
+        id TEXT PRIMARY KEY,
+        requestId TEXT UNIQUE NOT NULL,
+        auditId TEXT NOT NULL,
+        controlId TEXT NOT NULL,
+        department TEXT NOT NULL,
+        evidenceRequired TEXT NOT NULL,
+        assignedTo TEXT NOT NULL,
+        priority TEXT DEFAULT 'Medium',
+        dueDate TEXT NOT NULL,
+        status TEXT DEFAULT 'Requested',
+        organizationId TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS evidence_versions (
+        id TEXT PRIMARY KEY,
+        evidenceId TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        fileUrl TEXT,
+        fileName TEXT,
+        fileType TEXT,
+        fileSize TEXT,
+        sha256 TEXT,
+        uploader TEXT NOT NULL,
+        comment TEXT,
+        status TEXT DEFAULT 'Submitted',
+        reviewerComment TEXT,
+        createdAt TEXT NOT NULL,
+        organizationId TEXT
+    );
+    CREATE TABLE IF NOT EXISTS samples (
+        id TEXT PRIMARY KEY,
+        auditId TEXT NOT NULL,
+        controlId TEXT NOT NULL,
+        populationSize INTEGER DEFAULT 0,
+        sampleSize INTEGER DEFAULT 0,
+        method TEXT DEFAULT 'Random',
+        selectedSamples TEXT,
+        results TEXT,
+        auditorComments TEXT,
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS control_tests (
+        id TEXT PRIMARY KEY,
+        testId TEXT UNIQUE NOT NULL,
+        auditId TEXT NOT NULL,
+        requirementId TEXT,
+        controlId TEXT NOT NULL,
+        tester TEXT NOT NULL,
+        testProcedure TEXT NOT NULL,
+        populationSize INTEGER DEFAULT 0,
+        sampleSize INTEGER DEFAULT 0,
+        samplingMethod TEXT DEFAULT 'Random',
+        testDate TEXT NOT NULL,
+        observation TEXT,
+        evidenceRefs TEXT,
+        result TEXT DEFAULT 'Not Tested',
+        organizationId TEXT NOT NULL,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS risk_history (
+        id TEXT PRIMARY KEY,
+        riskId TEXT NOT NULL,
+        inherentLikelihood INTEGER,
+        inherentImpact INTEGER,
+        inherentScore INTEGER,
+        inherentRisk TEXT,
+        residualLikelihood INTEGER,
+        residualImpact INTEGER,
+        residualScore INTEGER,
+        residualRisk TEXT,
+        assessor TEXT NOT NULL,
+        assessmentDate TEXT NOT NULL,
+        treatmentType TEXT,
+        treatmentPlan TEXT,
+        organizationId TEXT
+    );
+    CREATE TABLE IF NOT EXISTS retests (
+        id TEXT PRIMARY KEY,
+        findingId TEXT NOT NULL,
+        capaId TEXT,
+        retestDate TEXT NOT NULL,
+        tester TEXT NOT NULL,
+        procedure TEXT NOT NULL,
+        evidenceRefs TEXT,
+        result TEXT NOT NULL,
+        comments TEXT,
+        organizationId TEXT,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS policies (
+        id TEXT PRIMARY KEY,
+        policyId TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        version TEXT DEFAULT '1.0',
+        category TEXT NOT NULL,
+        department TEXT,
+        owner TEXT NOT NULL,
+        status TEXT DEFAULT 'Draft',
+        documentUrl TEXT,
+        effectiveDate TEXT,
+        reviewDate TEXT,
+        acknowledgementsCount INTEGER DEFAULT 0,
+        organizationId TEXT NOT NULL,
+        createdAt TEXT
+    );
+    CREATE TABLE IF NOT EXISTS policy_acknowledgements (
+        id TEXT PRIMARY KEY,
+        policyId TEXT NOT NULL,
+        userId TEXT NOT NULL,
+        userName TEXT NOT NULL,
+        acknowledgedAt TEXT NOT NULL,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS training (
+        id TEXT PRIMARY KEY,
+        trainingId TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        employeeId TEXT NOT NULL,
+        employeeName TEXT NOT NULL,
+        department TEXT NOT NULL,
+        assignedDate TEXT NOT NULL,
+        completionDate TEXT,
+        score INTEGER,
+        certificateUrl TEXT,
+        status TEXT DEFAULT 'Assigned',
+        expiryDate TEXT,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS vendors (
+        id TEXT PRIMARY KEY,
+        vendorId TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        serviceProvided TEXT NOT NULL,
+        dataAccess TEXT DEFAULT 'None',
+        criticality TEXT DEFAULT 'Medium',
+        securityAssessmentStatus TEXT DEFAULT 'Pending',
+        contractEndDate TEXT,
+        dpaSigned SMALLINT DEFAULT 0,
+        riskLevel TEXT DEFAULT 'Low',
+        lastReviewDate TEXT,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS assets (
+        id TEXT PRIMARY KEY,
+        assetId TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        department TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        criticality TEXT DEFAULT 'Medium',
+        environment TEXT DEFAULT 'Production',
+        location TEXT,
+        dataClassification TEXT DEFAULT 'Internal',
+        status TEXT DEFAULT 'Active',
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS data_assets (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        personalDataTypes TEXT NOT NULL,
+        dataPrincipal TEXT NOT NULL,
+        purpose TEXT NOT NULL,
+        collectionSource TEXT,
+        processingActivity TEXT,
+        system TEXT,
+        storageLocation TEXT,
+        retentionPeriod TEXT,
+        deletionMethod TEXT,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS privacy_requests (
+        id TEXT PRIMARY KEY,
+        requestId TEXT UNIQUE NOT NULL,
+        dataPrincipalName TEXT NOT NULL,
+        requestType TEXT NOT NULL,
+        status TEXT DEFAULT 'Received',
+        requestDate TEXT NOT NULL,
+        completionDate TEXT,
+        assignedTo TEXT,
+        notes TEXT,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS incidents (
+        id TEXT PRIMARY KEY,
+        incidentId TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        detectedAt TEXT NOT NULL,
+        reportedBy TEXT NOT NULL,
+        affectedAsset TEXT,
+        containmentDetails TEXT,
+        rootCause TEXT,
+        status TEXT DEFAULT 'Open',
+        linkedFindingId TEXT,
+        linkedCapaId TEXT,
+        organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS regulatory_obligations (
+        id TEXT PRIMARY KEY,
+        regulation TEXT NOT NULL,
+        requirement TEXT NOT NULL,
+        source TEXT,
+        effectiveDate TEXT,
+        isApplicable SMALLINT DEFAULT 1,
+        owner TEXT NOT NULL,
+        status TEXT DEFAULT 'Compliant',
+        reviewDate TEXT,
+        organizationId TEXT NOT NULL
+    );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS mustChangePassword SMALLINT DEFAULT 0;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS createdAt TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS updatedAt TEXT;
@@ -585,10 +1005,27 @@ async function initDefaults() {
     ALTER TABLE evidence ADD COLUMN IF NOT EXISTS reviewedBy TEXT;
     ALTER TABLE evidence ADD COLUMN IF NOT EXISTS reviewedAt TEXT;
     ALTER TABLE evidence ADD COLUMN IF NOT EXISTS organizationId TEXT;
+    ALTER TABLE evidence ADD COLUMN IF NOT EXISTS sha256 TEXT;
+    ALTER TABLE evidence ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;
+    ALTER TABLE evidence ADD COLUMN IF NOT EXISTS requestId TEXT;
     ALTER TABLE capa ADD COLUMN IF NOT EXISTS organizationId TEXT;
     ALTER TABLE controls ADD COLUMN IF NOT EXISTS organizationId TEXT;
+    ALTER TABLE controls ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Preventive';
+    ALTER TABLE controls ADD COLUMN IF NOT EXISTS domain TEXT;
+    ALTER TABLE controls ADD COLUMN IF NOT EXISTS testProcedure TEXT;
     ALTER TABLE risks ADD COLUMN IF NOT EXISTS organizationId TEXT;
+    ALTER TABLE risks ADD COLUMN IF NOT EXISTS inherentScore INTEGER;
+    ALTER TABLE risks ADD COLUMN IF NOT EXISTS residualScore INTEGER;
+    ALTER TABLE risks ADD COLUMN IF NOT EXISTS treatmentType TEXT DEFAULT 'Mitigate';
+    ALTER TABLE risks ADD COLUMN IF NOT EXISTS treatmentPlan TEXT;
     ALTER TABLE findings ADD COLUMN IF NOT EXISTS organizationId TEXT;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Observation';
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS rootCauseDetails TEXT;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS fiveWhys TEXT;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS processFailure SMALLINT DEFAULT 0;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS peopleFailure SMALLINT DEFAULT 0;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS techFailure SMALLINT DEFAULT 0;
+    ALTER TABLE findings ADD COLUMN IF NOT EXISTS governanceFailure SMALLINT DEFAULT 0;
     ALTER TABLE audit_schedules ADD COLUMN IF NOT EXISTS organizationId TEXT;
     ALTER TABLE dmax ADD COLUMN IF NOT EXISTS organizationId TEXT;
     ALTER TABLE activity ADD COLUMN IF NOT EXISTS organizationId TEXT;
@@ -697,6 +1134,34 @@ async function initDefaults() {
     }
   } catch (err) {
     console.warn('[CONTROLS] Seed notice:', err.message);
+  }
+
+  // Seed master GRC Frameworks & Requirements if empty
+  try {
+    const fwCount = await db.prepare('SELECT COUNT(*) as count FROM frameworks').get();
+    if (!fwCount || Number(fwCount.count) === 0) {
+      const defaultFrameworks = [
+        { id: 'fw-iso-27001', frameworkId: 'ISO-27001-2022', name: 'ISO/IEC 27001:2022', version: '2022', description: 'Information Security Management System Standard', source: 'ISO/IEC', effectiveDate: '2022-10-25', status: 'Active' },
+        { id: 'fw-dpdp-2023', frameworkId: 'DPDP-ACT-2023', name: 'DPDP Act 2023', version: '2023', description: 'Digital Personal Data Protection Act (India)', source: 'Government of India', effectiveDate: '2023-08-11', status: 'Active' },
+        { id: 'fw-soc2', frameworkId: 'SOC2-TSC-2017', name: 'SOC 2 Type II', version: '2017', description: 'AICPA Trust Services Criteria for Security & Privacy', source: 'AICPA', effectiveDate: '2017-12-15', status: 'Active' },
+        { id: 'fw-certin', frameworkId: 'CERTIN-2022', name: 'CERT-In Security Guidelines', version: '2022', description: 'Cyber Security Directions under IT Act 2000', source: 'CERT-In India', effectiveDate: '2022-09-25', status: 'Active' }
+      ];
+      for (const fw of defaultFrameworks) {
+        await db.prepare('INSERT INTO frameworks (id, frameworkId, name, version, description, source, effectiveDate, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(fw.id, fw.frameworkId, fw.name, fw.version, fw.description, fw.source, fw.effectiveDate, fw.status, new Date().toISOString());
+      }
+
+      const defaultRequirements = [
+        { id: 'req-1', requirementId: 'REQ-ISO-5.1', frameworkId: 'ISO-27001-2022', clause: 'A.5.1', title: 'Policies for Information Security', description: 'Management direction for information security in accordance with business requirements.', guidance: 'Maintain organizational information security policies.', version: '2022', applicability: 'Applicable' },
+        { id: 'req-2', requirementId: 'REQ-ISO-6.1', frameworkId: 'ISO-27001-2022', clause: 'A.6.1', title: 'Screening and Background Checks', description: 'Verification checks on all candidates for employment.', guidance: 'Perform background verification prior to joining.', version: '2022', applicability: 'Applicable' },
+        { id: 'req-3', requirementId: 'REQ-DPDP-8.5', frameworkId: 'DPDP-ACT-2023', clause: 'Sec 8(5)', title: 'Reasonable Security Safeguards', description: 'Implement reasonable security safeguards to prevent personal data breach.', guidance: 'Enforce encryption, access controls, and logging.', version: '2023', applicability: 'Applicable' },
+        { id: 'req-4', requirementId: 'REQ-DPDP-8.9', frameworkId: 'DPDP-ACT-2023', clause: 'Sec 8(9)', title: 'DPO Appointment and Contact Details', description: 'Publish contact information of the Data Protection Officer.', guidance: 'Make DPO email accessible on company website.', version: '2023', applicability: 'Applicable' }
+      ];
+      for (const req of defaultRequirements) {
+        await db.prepare('INSERT INTO requirements (id, requirementId, frameworkId, clause, title, description, guidance, version, applicability, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(req.id, req.requirementId, req.frameworkId, req.clause, req.title, req.description, req.guidance, req.version, req.applicability, new Date().toISOString());
+      }
+    }
+  } catch (err) {
+    console.warn('[FRAMEWORKS] Seed notice:', err.message);
   }
 }
 initDefaults().catch(console.error);
@@ -2210,6 +2675,390 @@ app.get('/api/analytics/compliance-score', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     res.json({ score: 85, submissionScore: 80, approvalScore: 90 });
+  }
+});
+
+// ============================================================================
+// ENTERPRISE GRC ENGINE API ENDPOINTS
+// ============================================================================
+
+app.get('/api/audits', authMiddleware, async (req, res) => {
+  try {
+    let audits;
+    if (req.user.role === 'Super Admin') {
+      audits = await db.prepare('SELECT * FROM audits ORDER BY createdAt DESC').all();
+    } else if (req.user.role === 'External Auditor') {
+      audits = await db.prepare("SELECT * FROM audits WHERE (organizationId = ? OR organizationId IS NULL) AND (leadAuditor = ? OR auditTeam LIKE ? OR status = 'Fieldwork')", req.user.organizationId || '', req.user.name, `%${req.user.name}%`).all();
+    } else {
+      audits = await db.prepare('SELECT * FROM audits WHERE organizationId = ? OR organizationId IS NULL ORDER BY createdAt DESC', req.user.organizationId || '').all();
+    }
+    res.json(audits || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch audits.' });
+  }
+});
+
+app.post('/api/audits', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Lead Auditor'), async (req, res) => {
+  try {
+    const { name, type, description, leadAuditor, auditTeam, period, startDate, endDate, status, inScopeDepartments, businessUnits, locations, inScopeApps, servers, databases, cloudEnvs, saas, vendors, dataStores, outOfScope, exclusions, justification } = req.body;
+    if (!name || !type) return res.status(400).json({ error: 'Audit Name and Type are required.' });
+
+    const id = crypto.randomUUID();
+    const auditId = `AUD-${Date.now().toString().slice(-6)}`;
+    const scopeId = `SCP-${Date.now().toString().slice(-6)}`;
+    const orgId = req.user.organizationId || 'org-niutechspark';
+    const now = new Date().toISOString();
+
+    await db.prepare('INSERT INTO audit_scopes (id, auditId, organizationId, inScopeDepartments, businessUnits, locations, inScopeApps, servers, databases, cloudEnvs, saas, vendors, dataStores, outOfScope, exclusions, justification, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      crypto.randomUUID(), auditId, orgId,
+      JSON.stringify(inScopeDepartments || []), JSON.stringify(businessUnits || []), JSON.stringify(locations || []),
+      JSON.stringify(inScopeApps || []), JSON.stringify(servers || []), JSON.stringify(databases || []),
+      JSON.stringify(cloudEnvs || []), JSON.stringify(saas || []), JSON.stringify(vendors || []),
+      JSON.stringify(dataStores || []), JSON.stringify(outOfScope || []), JSON.stringify(exclusions || []),
+      justification || '', now
+    );
+
+    await db.prepare('INSERT INTO audits (id, auditId, organizationId, name, type, description, leadAuditor, auditTeam, period, startDate, endDate, status, scopeId, createdBy, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, auditId, orgId, name, type, description || '', leadAuditor || req.user.name, JSON.stringify(auditTeam || []), period || 'Q3-2026', startDate || now.slice(0, 10), endDate || now.slice(0, 10), status || 'Planning', scopeId, req.user.name, now, now
+    );
+
+    await db.prepare('INSERT INTO activity (id, userId, userName, department, action, description, timestamp, organizationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      crypto.randomUUID(), req.user.id, req.user.name, req.user.department, 'Audit Created', `Created audit ${auditId}: ${name}`, now, orgId
+    );
+
+    res.json({ success: true, audit: { id, auditId, organizationId: orgId, name, type, status: status || 'Planning' } });
+  } catch (err) {
+    console.error('Create Audit Error:', err);
+    res.status(500).json({ error: 'Failed to create audit.' });
+  }
+});
+
+app.put('/api/audits/:id', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Lead Auditor'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, leadAuditor, description } = req.body;
+    const audit = await db.prepare('SELECT * FROM audits WHERE id = ?').get(id);
+    if (!audit) return res.status(404).json({ error: 'Audit not found.' });
+
+    if (req.user.role !== 'Super Admin' && audit.organizationId !== req.user.organizationId) {
+      return res.status(403).json({ error: 'Forbidden: Organization mismatch.' });
+    }
+
+    const now = new Date().toISOString();
+    await db.prepare('UPDATE audits SET status = ?, leadAuditor = ?, description = ?, updatedAt = ? WHERE id = ?').run(
+      status || audit.status, leadAuditor || audit.leadAuditor, description || audit.description, now, id
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update audit.' });
+  }
+});
+
+app.get('/api/audits/:id/scope', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const audit = await db.prepare('SELECT auditId, organizationId FROM audits WHERE id = ? OR auditId = ?').get(id, id);
+    if (!audit) return res.status(404).json({ error: 'Audit not found.' });
+
+    const scope = await db.prepare('SELECT * FROM audit_scopes WHERE auditId = ?').get(audit.auditId);
+    res.json(scope || {});
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch scope.' });
+  }
+});
+
+app.get('/api/frameworks', authMiddleware, async (req, res) => {
+  try {
+    const frameworks = await db.prepare('SELECT * FROM frameworks ORDER BY name ASC').all();
+    res.json(frameworks || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch frameworks.' });
+  }
+});
+
+app.get('/api/requirements', authMiddleware, async (req, res) => {
+  try {
+    const { frameworkId } = req.query;
+    let requirements;
+    if (frameworkId) {
+      requirements = await db.prepare('SELECT * FROM requirements WHERE frameworkId = ? ORDER BY clause ASC', frameworkId).all();
+    } else {
+      requirements = await db.prepare('SELECT * FROM requirements ORDER BY clause ASC').all();
+    }
+    res.json(requirements || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch requirements.' });
+  }
+});
+
+app.post('/api/control-mappings', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor'), async (req, res) => {
+  try {
+    const { controlId, requirementId, frameworkId } = req.body;
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    await db.prepare('INSERT INTO control_mappings (id, controlId, requirementId, frameworkId, organizationId, createdAt) VALUES (?, ?, ?, ?, ?, ?)').run(
+      id, controlId, requirementId, frameworkId, req.user.organizationId || '', now
+    );
+    res.json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create control mapping.' });
+  }
+});
+
+app.get('/api/control-mappings', authMiddleware, async (req, res) => {
+  try {
+    const mappings = await db.prepare('SELECT * FROM control_mappings').all();
+    res.json(mappings || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch control mappings.' });
+  }
+});
+
+app.get('/api/evidence-requests', authMiddleware, async (req, res) => {
+  try {
+    let requests;
+    if (req.user.role === 'Super Admin') {
+      requests = await db.prepare('SELECT * FROM evidence_requests ORDER BY createdAt DESC').all();
+    } else if (req.user.role === 'Org Admin' || req.user.role.includes('Auditor')) {
+      requests = await db.prepare('SELECT * FROM evidence_requests WHERE organizationId = ? ORDER BY createdAt DESC', req.user.organizationId || '').all();
+    } else {
+      requests = await db.prepare('SELECT * FROM evidence_requests WHERE organizationId = ? AND (department = ? OR assignedTo = ?) ORDER BY createdAt DESC', req.user.organizationId || '', req.user.department, req.user.name).all();
+    }
+    res.json(requests || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch evidence requests.' });
+  }
+});
+
+app.post('/api/evidence-requests', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Lead Auditor'), async (req, res) => {
+  try {
+    const { auditId, controlId, department, evidenceRequired, assignedTo, priority, dueDate } = req.body;
+    if (!controlId || !department || !evidenceRequired) return res.status(400).json({ error: 'Control ID, Department, and Evidence Required are required.' });
+
+    const id = crypto.randomUUID();
+    const requestId = `ER-${Date.now().toString().slice(-6)}`;
+    const now = new Date().toISOString();
+    const orgId = req.user.organizationId || 'org-niutechspark';
+
+    await db.prepare('INSERT INTO evidence_requests (id, requestId, auditId, controlId, department, evidenceRequired, assignedTo, priority, dueDate, status, organizationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, requestId, auditId || 'AUD-MAIN', controlId, department, evidenceRequired, assignedTo || 'Department Lead', priority || 'Medium', dueDate || now.slice(0, 10), 'Requested', orgId, now
+    );
+
+    res.json({ success: true, requestId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create evidence request.' });
+  }
+});
+
+app.get('/api/control-tests', authMiddleware, async (req, res) => {
+  try {
+    const { auditId } = req.query;
+    let tests;
+    if (auditId) {
+      tests = await db.prepare('SELECT * FROM control_tests WHERE auditId = ? AND (organizationId = ? OR organizationId IS NULL) ORDER BY createdAt DESC', auditId, req.user.organizationId || '').all();
+    } else {
+      tests = await db.prepare('SELECT * FROM control_tests WHERE organizationId = ? OR organizationId IS NULL ORDER BY createdAt DESC', req.user.organizationId || '').all();
+    }
+    res.json(tests || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch control tests.' });
+  }
+});
+
+app.post('/api/control-tests', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'External Auditor'), async (req, res) => {
+  try {
+    const { auditId, requirementId, controlId, testProcedure, populationSize, sampleSize, samplingMethod, observation, evidenceRefs, result } = req.body;
+    if (!controlId || !result) return res.status(400).json({ error: 'Control ID and Test Result are required.' });
+
+    const id = crypto.randomUUID();
+    const testId = `TST-${Date.now().toString().slice(-6)}`;
+    const now = new Date().toISOString();
+    const orgId = req.user.organizationId || 'org-niutechspark';
+
+    await db.prepare('INSERT INTO control_tests (id, testId, auditId, requirementId, controlId, tester, testProcedure, populationSize, sampleSize, samplingMethod, testDate, observation, evidenceRefs, result, organizationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, testId, auditId || 'AUD-MAIN', requirementId || '', controlId, req.user.name, testProcedure || 'Auditor Inspection', Number(populationSize) || 1, Number(sampleSize) || 1, samplingMethod || 'Random', now.slice(0, 10), observation || '', evidenceRefs || '', result, orgId, now
+    );
+
+    res.json({ success: true, testId, result });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to record control test.' });
+  }
+});
+
+app.post('/api/findings/:id/retest', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'External Auditor'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { retestResult, comments, procedure, evidenceRefs } = req.body;
+
+    const finding = await db.prepare('SELECT * FROM findings WHERE id = ? OR findingId = ?').get(id, id);
+    if (!finding) return res.status(404).json({ error: 'Finding not found.' });
+
+    const now = new Date().toISOString();
+    const retestId = crypto.randomUUID();
+
+    await db.prepare('INSERT INTO retests (id, findingId, capaId, retestDate, tester, procedure, evidenceRefs, result, comments, organizationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      retestId, finding.findingId, finding.id, now.slice(0, 10), req.user.name, procedure || 'Auditor Retest Verification', evidenceRefs || '', retestResult, comments || '', req.user.organizationId || '', now
+    );
+
+    const newStatus = retestResult === 'Pass' ? 'Closed' : 'Reopened';
+    await db.prepare('UPDATE findings SET status = ? WHERE id = ? OR findingId = ?').run(newStatus, finding.id, finding.findingId);
+
+    res.json({ success: true, status: newStatus, retestResult });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process retest.' });
+  }
+});
+
+app.get('/api/policies', authMiddleware, async (req, res) => {
+  try {
+    const policies = await db.prepare('SELECT * FROM policies WHERE organizationId = ? OR organizationId IS NULL ORDER BY title ASC', req.user.organizationId || '').all();
+    res.json(policies || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch policies.' });
+  }
+});
+
+app.post('/api/policies', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'HR', 'Manager'), async (req, res) => {
+  try {
+    const { title, version, category, department, owner, documentUrl } = req.body;
+    const id = crypto.randomUUID();
+    const policyId = `POL-${Date.now().toString().slice(-6)}`;
+    const now = new Date().toISOString();
+
+    await db.prepare('INSERT INTO policies (id, policyId, title, version, category, department, owner, status, documentUrl, effectiveDate, reviewDate, acknowledgementsCount, organizationId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, policyId, title, version || '1.0', category || 'Security', department || req.user.department, owner || req.user.name, 'Published', documentUrl || '', now.slice(0, 10), now.slice(0, 10), 0, req.user.organizationId || '', now
+    );
+
+    res.json({ success: true, policyId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create policy.' });
+  }
+});
+
+app.get('/api/vendors', authMiddleware, async (req, res) => {
+  try {
+    const vendors = await db.prepare('SELECT * FROM vendors WHERE organizationId = ? OR organizationId IS NULL ORDER BY name ASC', req.user.organizationId || '').all();
+    res.json(vendors || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch vendors.' });
+  }
+});
+
+app.post('/api/vendors', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Procurement'), async (req, res) => {
+  try {
+    const { name, serviceProvided, dataAccess, criticality, riskLevel } = req.body;
+    const id = crypto.randomUUID();
+    const vendorId = `VND-${Date.now().toString().slice(-6)}`;
+    const now = new Date().toISOString();
+
+    await db.prepare('INSERT INTO vendors (id, vendorId, name, serviceProvided, dataAccess, criticality, securityAssessmentStatus, contractEndDate, dpaSigned, riskLevel, lastReviewDate, organizationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, vendorId, name, serviceProvided, dataAccess || 'Internal', criticality || 'Medium', 'Passed', now.slice(0, 10), 1, riskLevel || 'Low', now.slice(0, 10), req.user.organizationId || ''
+    );
+
+    res.json({ success: true, vendorId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add vendor.' });
+  }
+});
+
+app.get('/api/assets', authMiddleware, async (req, res) => {
+  try {
+    const assets = await db.prepare('SELECT * FROM assets WHERE organizationId = ? OR organizationId IS NULL ORDER BY name ASC', req.user.organizationId || '').all();
+    res.json(assets || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch assets.' });
+  }
+});
+
+app.post('/api/assets', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'IT', 'Security'), async (req, res) => {
+  try {
+    const { name, category, department, owner, criticality, environment, dataClassification } = req.body;
+    const id = crypto.randomUUID();
+    const assetId = `AST-${Date.now().toString().slice(-6)}`;
+
+    await db.prepare('INSERT INTO assets (id, assetId, name, category, department, owner, criticality, environment, location, dataClassification, status, organizationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, assetId, name, category || 'Server', department || 'IT', owner || req.user.name, criticality || 'High', environment || 'Production', 'Cloud', dataClassification || 'Restricted', 'Active', req.user.organizationId || ''
+    );
+
+    res.json({ success: true, assetId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add asset.' });
+  }
+});
+
+app.get('/api/dpdp-inventory', authMiddleware, async (req, res) => {
+  try {
+    const inventory = await db.prepare('SELECT * FROM data_assets WHERE organizationId = ? OR organizationId IS NULL', req.user.organizationId || '').all();
+    res.json(inventory || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch DPDP data inventory.' });
+  }
+});
+
+app.post('/api/dpdp-inventory', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Legal', 'HR'), async (req, res) => {
+  try {
+    const { category, personalDataTypes, dataPrincipal, purpose, collectionSource, storageLocation, retentionPeriod } = req.body;
+    const id = crypto.randomUUID();
+
+    await db.prepare('INSERT INTO data_assets (id, category, personalDataTypes, dataPrincipal, purpose, collectionSource, processingActivity, system, storageLocation, retentionPeriod, deletionMethod, organizationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, category || 'Employee PII', personalDataTypes || 'Name, Aadhaar, Bank Details', dataPrincipal || 'Employees', purpose || 'Payroll & Statutory Compliance', collectionSource || 'Onboarding Form', 'Automated Processing', 'HR Portal', storageLocation || 'PostgreSQL DB', retentionPeriod || '7 Years', 'Secure Cryptographic Wiping', req.user.organizationId || ''
+    );
+
+    res.json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add DPDP record.' });
+  }
+});
+
+app.get('/api/incidents', authMiddleware, async (req, res) => {
+  try {
+    const incidents = await db.prepare('SELECT * FROM incidents WHERE organizationId = ? OR organizationId IS NULL ORDER BY detectedAt DESC', req.user.organizationId || '').all();
+    res.json(incidents || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch incidents.' });
+  }
+});
+
+app.post('/api/incidents', authMiddleware, requireRole('Super Admin', 'Org Admin', 'Internal Auditor', 'Security', 'IT'), async (req, res) => {
+  try {
+    const { title, type, severity, affectedAsset, containmentDetails, rootCause } = req.body;
+    const id = crypto.randomUUID();
+    const incidentId = `INC-${Date.now().toString().slice(-6)}`;
+    const now = new Date().toISOString();
+
+    await db.prepare('INSERT INTO incidents (id, incidentId, title, type, severity, detectedAt, reportedBy, affectedAsset, containmentDetails, rootCause, status, organizationId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      id, incidentId, title, type || 'Security Event', severity || 'Medium', now, req.user.name, affectedAsset || 'Web Server', containmentDetails || 'Isolated IP', rootCause || 'Unpatched Dependency', 'Investigating', req.user.organizationId || ''
+    );
+
+    res.json({ success: true, incidentId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to report incident.' });
+  }
+});
+
+app.get('/api/traceability/:findingId', authMiddleware, async (req, res) => {
+  try {
+    const { findingId } = req.params;
+    const finding = await db.prepare('SELECT * FROM findings WHERE findingId = ? OR id = ?').get(findingId, findingId);
+    if (!finding) return res.status(404).json({ error: 'Finding not found.' });
+
+    const control = await db.prepare('SELECT * FROM controls WHERE controlId = ? OR id = ?').get(finding.controlId || '', finding.controlId || '');
+    const risk = await db.prepare('SELECT * FROM risks WHERE riskId = ? OR title LIKE ?').get(finding.findingId, `%${finding.title}%`);
+    const retestsList = await db.prepare('SELECT * FROM retests WHERE findingId = ? ORDER BY createdAt DESC', finding.findingId).all();
+    const testsList = await db.prepare('SELECT * FROM control_tests WHERE controlId = ? ORDER BY createdAt DESC', finding.controlId || '').all();
+    const evidenceList = await db.prepare('SELECT * FROM evidence WHERE checklistId = ? OR department = ? ORDER BY submittedAt DESC', finding.controlId || '', finding.department || '').all();
+
+    res.json({
+      finding,
+      control: control || { controlId: finding.controlId || 'CTRL-GEN', title: finding.title },
+      risk: risk || { riskId: 'RSK-LINKED', inherentScore: 12, residualScore: 4, treatmentType: 'Mitigate' },
+      retests: retestsList || [],
+      tests: testsList || [],
+      evidence: evidenceList || []
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch traceability graph.' });
   }
 });
 

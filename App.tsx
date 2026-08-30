@@ -17,6 +17,12 @@ import LoginPage from './components/LoginPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import LandingPage from './components/LandingPage';
 import GovernanceHub from './components/GovernanceHub';
+import { AuditManager } from './components/AuditManager';
+import { FrameworkLibrary } from './components/FrameworkLibrary';
+import { EvidenceRequestHub } from './components/EvidenceRequestHub';
+import { ControlTestingWorkspace } from './components/ControlTestingWorkspace';
+import { PrivacyDPDPHub } from './components/PrivacyDPDPHub';
+import { AssetVendorPolicyHub } from './components/AssetVendorPolicyHub';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -233,6 +239,18 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard user={currentUser} evidence={evidenceStore} capa={capaStore} checklists={checklistStore} users={userStore} setActiveTab={setActiveTab} />;
+      case 'audits':
+        return <AuditManager user={currentUser} />;
+      case 'frameworks':
+        return <FrameworkLibrary user={currentUser} />;
+      case 'requests':
+        return <EvidenceRequestHub user={currentUser} />;
+      case 'testing':
+        return <ControlTestingWorkspace user={currentUser} />;
+      case 'dpdp':
+        return <PrivacyDPDPHub user={currentUser} />;
+      case 'assets':
+        return <AssetVendorPolicyHub user={currentUser} />;
       case 'dept_hub':
         return <DepartmentHub user={currentUser} />;
       case 'checklists':

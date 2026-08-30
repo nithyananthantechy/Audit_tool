@@ -289,5 +289,33 @@ export const api = {
       reader.onerror = () => reject(new Error('Failed to read file buffer.'));
       reader.readAsDataURL(file);
     });
-  }
+  },
+
+  // Enterprise GRC API Client Methods
+  getAudits: async () => fetchJSON(`${API_Base}/audits`),
+  createAudit: async (auditData: any) => fetchJSON(`${API_Base}/audits`, { method: 'POST', body: JSON.stringify(auditData) }),
+  updateAudit: async (id: string, auditData: any) => fetchJSON(`${API_Base}/audits/${id}`, { method: 'PUT', body: JSON.stringify(auditData) }),
+  getAuditScope: async (id: string) => fetchJSON(`${API_Base}/audits/${id}/scope`),
+  getFrameworks: async () => fetchJSON(`${API_Base}/frameworks`),
+  getRequirements: async (frameworkId?: string) => fetchJSON(frameworkId ? `${API_Base}/requirements?frameworkId=${encodeURIComponent(frameworkId)}` : `${API_Base}/requirements`),
+  getControlMappings: async () => fetchJSON(`${API_Base}/control-mappings`),
+  createControlMapping: async (mapping: any) => fetchJSON(`${API_Base}/control-mappings`, { method: 'POST', body: JSON.stringify(mapping) }),
+  getEvidenceRequests: async () => fetchJSON(`${API_Base}/evidence-requests`),
+  createEvidenceRequest: async (reqData: any) => fetchJSON(`${API_Base}/evidence-requests`, { method: 'POST', body: JSON.stringify(reqData) }),
+  getControlTests: async (auditId?: string) => fetchJSON(auditId ? `${API_Base}/control-tests?auditId=${encodeURIComponent(auditId)}` : `${API_Base}/control-tests`),
+  submitControlTest: async (testData: any) => fetchJSON(`${API_Base}/control-tests`, { method: 'POST', body: JSON.stringify(testData) }),
+  retestFinding: async (findingId: string, retestData: any) => fetchJSON(`${API_Base}/findings/${findingId}/retest`, { method: 'POST', body: JSON.stringify(retestData) }),
+  getPolicies: async () => fetchJSON(`${API_Base}/policies`),
+  createPolicy: async (policyData: any) => fetchJSON(`${API_Base}/policies`, { method: 'POST', body: JSON.stringify(policyData) }),
+  getVendors: async () => fetchJSON(`${API_Base}/vendors`),
+  createVendor: async (vendorData: any) => fetchJSON(`${API_Base}/vendors`, { method: 'POST', body: JSON.stringify(vendorData) }),
+  getAssets: async () => fetchJSON(`${API_Base}/assets`),
+  createAsset: async (assetData: any) => fetchJSON(`${API_Base}/assets`, { method: 'POST', body: JSON.stringify(assetData) }),
+  getDPDPInventory: async () => fetchJSON(`${API_Base}/dpdp-inventory`),
+  createDPDPRecord: async (recordData: any) => fetchJSON(`${API_Base}/dpdp-inventory`, { method: 'POST', body: JSON.stringify(recordData) }),
+  getIncidents: async () => fetchJSON(`${API_Base}/incidents`),
+  createIncident: async (incidentData: any) => fetchJSON(`${API_Base}/incidents`, { method: 'POST', body: JSON.stringify(incidentData) }),
+  getTraceability: async (findingId: string) => fetchJSON(`${API_Base}/traceability/${encodeURIComponent(findingId)}`)
 };
+
+export const apiClient = api;
