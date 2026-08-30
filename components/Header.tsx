@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../types';
 import { COMPANY_NAME, APP_NAME } from '../constants';
+import { api } from '../apiClient';
 import {
   Bell, Search, X, CheckCircle, AlertTriangle, Info, Camera, Save, Lock,
   ChevronDown, User as UserIcon, Key, LogOut
@@ -22,6 +23,8 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
+    name: user.name || '',
+    email: user.email || '',
     profilePic: user.profilePic || ''
   });
 
@@ -31,11 +34,26 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
     confirmPassword: ''
   });
 
-  const notifications = [
-    { id: '1', title: 'New CAPA Submission', message: 'IT Department submitted a new report.', type: 'info', time: '5m ago' },
-    { id: '2', title: 'Audit Approved', message: 'Your HR evidence was approved by the manager.', type: 'success', time: '1h ago' },
-    { id: '3', title: 'Pending Audit', message: '3 items are pending your review.', type: 'warning', time: '2h ago' },
-  ];
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.getNotifications();
+      if (res && res.notifications) {
+        setNotifications(res.notifications);
+        setUnreadCount(res.unreadCount || 0);
+      }
+    } catch (e) {
+      console.error('Failed to load notifications:', e);
+    }
+  };
+
+  useEffect(() => {
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setFormData({
@@ -64,24 +82,39 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
     setIsProfileModalOpen(false);
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user.password && passwordData.currentPassword !== user.password) {
-      alert('Incorrect current password.');
+    if (!passwordData.currentPassword) {
+      alert('Please enter your current password.');
       return;
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert('New passwords do not match.');
       return;
     }
-    if (passwordData.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long.');
+    if (passwordData.newPassword.length < 8) {
+      alert('Password must be at least 8 characters long.');
       return;
     }
-    onUpdateProfile({ ...user, password: passwordData.newPassword });
-    setIsPasswordModalOpen(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    alert('Password updated successfully!');
+
+    try {
+      await api.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      setIsPasswordModalOpen(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      alert('Password updated and cryptographically hashed successfully on server.');
+    } catch (err: any) {
+      alert(err.message || 'Failed to update password. Verify current password.');
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: 1 })));
+      setUnreadCount(0);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,52 +127,124 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
     }
   };
 
+  const isLicenseExpiring = user.organization?.isExpiringSoon || (user.organization?.daysRemaining !== undefined && user.organization.daysRemaining <= 10);
+
   return (
-    <header className="h-16 bg-slate-950/40 backdrop-blur-md border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-40">
-      <div className="flex items-center gap-4 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full w-96 focus-within:bg-white/[0.06] transition-all focus-within:border-blue-500/30">
-        <Search size={18} className="text-slate-500" />
-        <input
-          type="text"
-          placeholder="Search portal assets..."
-          className="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-slate-600"
-        />
-      </div>
+    <>
+      {/* Top Banner: License Expiring Notice (<= 10 Days) */}
+      {isLicenseExpiring && (
+        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-slate-950 px-6 py-2 text-xs font-bold flex items-center justify-between shadow-xl relative z-50 animate-pulse">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-slate-950 shrink-0" />
+            <span>
+              <strong>⚠️ URGENT LICENSE EXPIRY NOTICE:</strong> Your organization ({user.organization?.name || 'Client'}) subscription expires in <strong>{user.organization?.daysRemaining ?? 'few'} days</strong> (End Date: {user.organization?.endDate ? user.organization.endDate.substring(0, 10) : 'Soon'}). Please contact <strong>NitechSpark</strong> to renew your license to avoid service suspension.
+            </span>
+          </div>
+          <span className="hidden md:inline-block px-3 py-1 bg-slate-950 text-amber-400 rounded-lg text-[10px] uppercase font-black tracking-widest">
+            Contact NitechSpark
+          </span>
+        </div>
+      )}
 
-      <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <div className="relative" ref={notifyRef}>
-          <button
-            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className={`relative p-2 rounded-xl transition-all duration-200 ${isNotificationsOpen ? 'bg-blue-600/20 text-blue-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-          >
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-slate-950 animate-pulse"></span>
-          </button>
-
-          {isNotificationsOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Notifications</h3>
-              </div>
-              <div className="max-h-96 overflow-y-auto">
-                {notifications.map((n) => (
-                  <div key={n.id} className="p-4 border-b border-white/[0.02] hover:bg-white/[0.03] transition-colors cursor-pointer group">
-                    <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{n.title}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{n.message}</p>
-                    <p className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-tighter">{n.time}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <header className="h-16 bg-slate-950/40 backdrop-blur-md border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-4 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full w-96 focus-within:bg-white/[0.06] transition-all focus-within:border-blue-500/30">
+          <Search size={18} className="text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search portal assets..."
+            className="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-slate-600"
+          />
         </div>
 
-        {/* User Profile Menu */}
-        <div className="relative flex items-center gap-3 pl-6 border-l border-white/10" ref={userMenuRef}>
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-black text-white leading-tight tracking-tight">{user.name}</p>
-            <p className="text-[9px] text-blue-400 font-black uppercase tracking-[0.15em] mt-0.5">{user.role} &bull; {user.department}</p>
+        <div className="flex items-center gap-4">
+          {/* Notifications */}
+          <div className="relative" ref={notifyRef}>
+            <button
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+              className={`relative p-2 rounded-xl transition-all duration-200 ${isNotificationsOpen ? 'bg-blue-600/20 text-blue-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+            >
+              <Bell size={20} />
+              {(unreadCount > 0 || isLicenseExpiring) && (
+                <span className="absolute top-1 right-1 px-1.5 py-0.5 text-[9px] font-black bg-amber-500 text-slate-950 rounded-full border-2 border-slate-950 animate-pulse">
+                  {unreadCount + (isLicenseExpiring ? 1 : 0)}
+                </span>
+              )}
+            </button>
+
+            {isNotificationsOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="p-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+                  <h3 className="text-xs font-black text-white uppercase tracking-widest">Audit & License Alerts</h3>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="text-[9px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-widest"
+                    >
+                      Mark All Read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-96 overflow-y-auto divide-y divide-white/5">
+                  {isLicenseExpiring && (
+                    <div className="p-4 bg-amber-500/10 border-b border-amber-500/20">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                          <AlertTriangle size={14} /> License Expiring Soon
+                        </p>
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                      </div>
+                      <p className="text-[11px] text-amber-200/80 mt-1">
+                        Subscription expires in {user.organization?.daysRemaining} days ({user.organization?.endDate?.substring(0, 10)}). Contact NitechSpark support to renew.
+                      </p>
+                    </div>
+                  )}
+
+                  {notifications.length === 0 && !isLicenseExpiring ? (
+                    <div className="p-6 text-center text-xs text-slate-500 font-bold uppercase tracking-wider">
+                      No active notifications
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={async () => {
+                          if (!n.isRead) {
+                            try {
+                              await api.markNotificationRead(n.id);
+                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, isRead: 1 } : item));
+                              setUnreadCount(prev => Math.max(0, prev - 1));
+                            } catch {}
+                          }
+                        }}
+                        className={`p-4 hover:bg-white/[0.03] transition-colors cursor-pointer group ${n.isRead ? 'opacity-60' : 'bg-blue-500/5'}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">{n.title}</p>
+                          {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{n.message}</p>
+                        <p className="text-[10px] text-slate-500 mt-2 font-black uppercase tracking-tighter">
+                          {n.createdAt ? new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* User Profile Menu */}
+          <div className="relative flex items-center gap-3 pl-6 border-l border-white/10" ref={userMenuRef}>
+            <div className="text-right hidden sm:block">
+              <div className="flex items-center justify-end gap-2">
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-[9px] font-black uppercase border border-blue-500/30 truncate max-w-[130px]">
+                  {user.organization?.name || 'NitechSpark'}
+                </span>
+                <p className="text-sm font-black text-white leading-tight tracking-tight">{user.name}</p>
+              </div>
+              <p className="text-[9px] text-blue-400 font-black uppercase tracking-[0.15em] mt-0.5">{user.role} &bull; {user.department}</p>
+            </div>
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
             className="flex items-center gap-2 group p-1 rounded-xl hover:bg-white/5 transition-all"
@@ -272,6 +377,7 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
         </div>
       )}
     </header>
+    </>
   );
 };
 

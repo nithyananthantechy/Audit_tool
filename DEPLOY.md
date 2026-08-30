@@ -82,7 +82,7 @@ npm run build
 ## 4. Verify Deployment
 
 1.  Open your web browser and navigate to your server's IP address (`http://your-server-ip`).
-2.  Login with `admin@nitechspark.in` / `password123`.
+2.  Log in using your provisioned administrator credentials and complete initial MFA setup.
 3.  Check if the Dashboard loads correctly.
 
 ## Troubleshooting

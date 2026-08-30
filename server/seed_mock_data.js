@@ -1,8 +1,8 @@
-require('dotenv').config({ path: '../.env.production' });
-const { neon } = require('@neondatabase/serverless');
-const crypto = require('crypto');
-
-const sql = neon(process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_Jn8WgiI2kKvG@ep-cold-bonus-aohuzio6-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require');
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable required.');
+  process.exit(1);
+}
+const sql = neon(process.env.DATABASE_URL);
 
 async function seedMockData() {
     try {

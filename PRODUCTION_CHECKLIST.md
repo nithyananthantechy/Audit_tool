@@ -101,10 +101,8 @@ scp -r dist user@your-server:/var/www/your-app/
 - [ ] Use strong SESSION_SECRET
 - [ ] Enable HTTPS (via nginx or cloud provider)
 - [ ] Use App Password for Gmail SMTP
-- [ ] Rotate all default passwords:
-  - `admin@nitechspark.in` / `password123`
-  - `gowriamutha@nitechspark.in` / `nitechspark@2026`
-  - `test@nitechspark.in` / `123`
+- [ ] Rotate all initial bootstrap administrative passwords upon first login
+- [ ] Enforce strong MFA for all administrative and auditor accounts
 
 ## 7. Monitoring & Analytics
 

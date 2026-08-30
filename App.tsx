@@ -16,6 +16,7 @@ import AuditLog from './components/departments/AuditLog';
 import LoginPage from './components/LoginPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import LandingPage from './components/LandingPage';
+import GovernanceHub from './components/GovernanceHub';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -39,7 +40,9 @@ const App: React.FC = () => {
       if (data.evidence) setEvidenceStore(data.evidence);
       if (data.capa) setCapaStore(data.capa);
       if (data.activity) setActivityStore(data.activity);
-      if (data.checklists) setChecklistStore(data.checklists);
+      if (data.checklists) {
+        setChecklistStore(data.checklists.length > 0 ? data.checklists : DEPARTMENT_CHECKLISTS);
+      }
     } catch (error) {
       console.error("Failed to load data from server:", error);
     }
@@ -72,7 +75,7 @@ const App: React.FC = () => {
 
           // Set the right default tab
           const role = result.user.role;
-          if (role === Role.SUPER_ADMIN) setActiveTab('admin');
+          if (role === Role.SUPER_ADMIN || role === Role.ORG_ADMIN) setActiveTab('admin');
           else if (role === Role.EXTERNAL_AUDITOR) setActiveTab('executive');
           else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
           else setActiveTab('dashboard');
@@ -106,29 +109,21 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleLogin = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+  const handleLogin = async (email: string, password?: string): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string; challengeToken?: string }> => {
     try {
       const result = await api.login(email, password || '');
       if (result.error) {
         return { success: false, error: result.error };
-      } else if (result.mfaSetupRequired && result.user) {
-        setCurrentUser(result.user);
-        setLoginState('welcome');
-        return { success: true };
-      } else if (result.user) {
+      }
+      if (result.mfaRequired) {
+        return { success: true, mfaRequired: true, userId: result.userId, challengeToken: result.challengeToken };
+      }
+      if (result.user) {
         setCurrentUser(result.user);
         setLoginState('welcome');
         await loadData();
         startPolling();
         logActivity(result.user, ActivityType.LOGIN, `User logged into the compliance portal.`);
-        setTimeout(() => {
-          setLoginState('active');
-          const role = result.user.role;
-          if (role === Role.SUPER_ADMIN) setActiveTab('admin');
-          else if (role === Role.EXTERNAL_AUDITOR) setActiveTab('executive');
-          else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
-          else setActiveTab('dashboard');
-        }, 2000);
         return { success: true };
       }
     } catch (err: any) {
@@ -137,9 +132,9 @@ const App: React.FC = () => {
     return { success: false, error: 'Unknown authentication error.' };
   };
 
-  const handleVerifyMfa = async (userId: string, token: string): Promise<{ success: boolean; error?: string }> => {
+  const handleVerifyMfa = async (userId: string, token: string, challengeToken?: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const result = await api.verifyMfa(userId, token);
+      const result = await api.verifyMfa(userId, token, challengeToken);
       if (result.error) {
         return { success: false, error: result.error };
       }
@@ -148,7 +143,7 @@ const App: React.FC = () => {
         setLoginState('welcome');
         await loadData();
         startPolling();
-        logActivity(result.user, ActivityType.LOGIN, `User logged into the compliance portal via MFA.`);
+        logActivity(result.user, ActivityType.LOGIN, `User authenticated via MFA.`);
         setTimeout(() => {
           setLoginState('active');
           const role = result.user.role;
@@ -156,7 +151,7 @@ const App: React.FC = () => {
           else if (role === Role.EXTERNAL_AUDITOR) setActiveTab('executive');
           else if (role === Role.INTERNAL_AUDITOR) setActiveTab('approvals');
           else setActiveTab('dashboard');
-        }, 2000);
+        }, 1500);
         return { success: true };
       }
     } catch (err: any) {
@@ -250,6 +245,8 @@ const App: React.FC = () => {
         return <CEOView evidence={evidenceStore} capa={capaStore} setEvidence={setEvidenceStore} setCapa={setCapaStore} user={currentUser} logActivity={logActivity} users={userStore} />;
       case 'admin':
         return <AdminPanel capa={capaStore} users={userStore} setUsers={setUserStore} activities={activityStore} user={currentUser} logActivity={logActivity} onResetPassword={handleResetUserPassword} onToggleLock={handleToggleUserLock} checklists={checklistStore} setChecklists={setChecklistStore} />;
+      case 'governance':
+        return <GovernanceHub user={currentUser} logActivity={logActivity} />;
       case 'auditlog':
         return <AuditLog />;
       default:

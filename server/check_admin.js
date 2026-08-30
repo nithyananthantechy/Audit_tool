@@ -1,16 +1,31 @@
+require('dotenv').config({ path: '../.env' });
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcrypt');
-const sql = neon('postgresql://neondb_owner:npg_Jn8WgiI2kKvG@ep-cold-bonus-aohuzio6-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require');
+
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable required.');
+  process.exit(1);
+}
+
+const sql = neon(process.env.DATABASE_URL);
 
 async function run() {
+  const targetEmail = process.argv[2] || 'admin@nitechspark.in';
+  const newPassword = process.argv[3];
+
+  if (!newPassword || newPassword.length < 8) {
+    console.error('Usage: node check_admin.js <email> <newPassword(min 8 chars)>');
+    process.exit(1);
+  }
+
   try {
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), 10);
     await sql`
-      UPDATE users SET password = ${hashedPassword}, islocked = 0, loginattempts = 0 WHERE email = 'admin@nitechspark.in';
+      UPDATE users SET password = ${hashedPassword}, isLocked = 0, loginAttempts = 0 WHERE email = ${targetEmail.trim()};
     `;
-    console.log("Admin user unlocked and password set to password123!");
+    console.log(`User ${targetEmail} unlocked and password reset.`);
   } catch(e) {
-    console.error(e);
+    console.error('Admin reset error:', e.message);
   }
 }
 run();

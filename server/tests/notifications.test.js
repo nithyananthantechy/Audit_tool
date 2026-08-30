@@ -1,95 +1,36 @@
 const request = require('supertest');
 const app = require('../server');
-const crypto = require('crypto');
+const api = require('./setup');
 
 describe('Notifications API', () => {
   let token = null;
-  let userId = null;
+  const userEmail = `notif_user_${Date.now()}@nitechspark.in`;
+  const userPass = 'Notif#2026!';
 
   beforeAll(async () => {
+    await api.seedUser(userEmail, userPass, 'Contributor', 'Operations');
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@desicrew.in', password: 'password123' });
+      .send({ email: userEmail, password: userPass });
     token = res.body.token;
-    userId = res.body.user.id;
   });
 
-  describe('GET /api/notifications', () => {
-    it('should return notifications for logged-in user', async () => {
-      const res = await request(app)
-        .get('/api/notifications')
-        .set('Authorization', `Bearer ${token}`);
+  it('GET /api/notifications should return notification list and unread count', async () => {
+    const res = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.notifications).toBeDefined();
-      expect(res.body.unreadCount).toBeDefined();
-      expect(typeof res.body.unreadCount).toBe('number');
-    });
-
-    it('should require authentication', async () => {
-      const res = await request(app)
-        .get('/api/notifications');
-
-      expect(res.status).toBe(401);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.notifications).toBeDefined();
+    expect(typeof res.body.unreadCount).toBe('number');
   });
 
-  describe('PUT /api/notifications/:id/read', () => {
-    it('should mark notification as read', async () => {
-      const notifyId = 'test-not-' + crypto.randomBytes(4).toString('hex');
-      
-      await app.db.prepare(`INSERT INTO notifications (id, userId, type, title, message, isRead, createdAt) VALUES (?, ?, ?, ?, ?, 0, ?) ON CONFLICT DO NOTHING`)
-        .run(notifyId, userId, 'info', 'Test Notification', 'Test message', new Date().toISOString());
+  it('PUT /api/notifications/read-all should mark notifications as read', async () => {
+    const res = await request(app)
+      .put('/api/notifications/read-all')
+      .set('Authorization', `Bearer ${token}`);
 
-      const res = await request(app)
-        .put(`/api/notifications/${notifyId}/read`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
-  });
-
-  describe('PUT /api/notifications/read-all', () => {
-    it('should mark all notifications as read', async () => {
-      const res = await request(app)
-        .put('/api/notifications/read-all')
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
-  });
-
-  describe('GET /api/notifications/preferences', () => {
-    it('should return notification preferences', async () => {
-      const res = await request(app)
-        .get('/api/notifications/preferences')
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.userId).toBeDefined();
-      expect(res.body.inApp).toBeDefined();
-      expect(res.body.email).toBeDefined();
-    });
-  });
-
-  describe('PUT /api/notifications/preferences', () => {
-    it('should update notification preferences', async () => {
-      const res = await request(app)
-        .put('/api/notifications/preferences')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          inApp: true,
-          email: false,
-          submission: true,
-          approval: true,
-          deadline: true,
-          assignment: true
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 });

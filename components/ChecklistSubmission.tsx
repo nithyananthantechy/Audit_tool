@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChecklistItem, User, Evidence, AuditStatus, Department, ActivityType } from '../types';
+import { ChecklistItem, User, Evidence, AuditStatus, Department, ActivityType, Role } from '../types';
 import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
 import { Upload, Plus, AlertCircle, CheckCircle2, X, FileText, Loader2, ClipboardList, Calendar, ChevronRight } from 'lucide-react';
 import { api } from '../apiClient';
@@ -14,80 +14,138 @@ interface ChecklistProps {
 }
 
 const MAX_COMMENT_LENGTH = 1000;
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+const ALLOWED_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/png',
+  'image/jpeg',
+  'text/plain',
+  'application/json'
+];
 
 const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvidence, logActivity, checklists }) => {
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [comment, setComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
+  const [fileType, setFileType] = useState('');
+  const [fileSize, setFileSize] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const departmentTasks = checklists.filter(t => t.department === user.department);
+  const availableChecklists = (checklists && checklists.length > 0) ? checklists : DEPARTMENT_CHECKLISTS;
+  const directTasks = availableChecklists.filter(t => t.department === user.department);
+  const departmentTasks = (directTasks.length > 0 && user.role !== Role.ORG_ADMIN && user.role !== Role.SUPER_ADMIN)
+    ? directTasks
+    : availableChecklists;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError('');
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+
+      if (file.type && !ALLOWED_TYPES.includes(file.type)) {
+        setError('Invalid file type. Supported: PDF, Word, Excel, PNG, JPG, Text, JSON.');
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        setError('File size exceeds maximum 15MB limit.');
+        return;
+      }
+
+      setSelectedFile(file);
       setFileName(file.name);
-      setFileUrl(`file://${file.name}`);
-      setError('');
+      setFileType(file.type || 'application/octet-stream');
+      setFileSize((file.size / 1024 / 1024).toFixed(2) + ' MB');
     }
   };
 
   const removeFile = () => {
+    setSelectedFile(null);
     setFileName('');
+    setFileType('');
+    setFileSize('');
     setFileUrl('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!selectedTaskId) {
-      setError('Please select a checklist item.');
+      setError('Please select an audit objective.');
       return;
     }
     if (!comment.trim()) {
-      setError('Comments are required.');
+      setError('Contextual commentary is required for compliance verification.');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const taskObj = departmentTasks.find(t => t.id === selectedTaskId);
-      const newEvidence: Evidence = {
-        id: Math.random().toString(36).substr(2, 9),
-        userId: user.id,
-        checklistItemId: selectedTaskId,
-        department: user.department,
-        submissionDate: new Date().toISOString().split('T')[0],
-        fileUrl: fileUrl,
-        comment: comment,
-        status: AuditStatus.SUBMITTED
-      };
+    let actualFileUrl = fileUrl;
+    let actualFileName = fileName;
+    let actualFileSize = fileSize;
+    let actualFileType = fileType;
 
-      // Optimistic update
+    if (selectedFile) {
+      try {
+        const uploadResult = await api.uploadFile(selectedFile);
+        actualFileUrl = uploadResult.fileUrl;
+        actualFileName = uploadResult.fileName;
+        actualFileSize = uploadResult.fileSize;
+        actualFileType = uploadResult.fileType;
+      } catch (uploadErr: any) {
+        setError(uploadErr.message || 'File upload failed');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const taskObj = departmentTasks.find(t => t.id === selectedTaskId);
+    const newEvidence: Evidence = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      userName: user.name,
+      checklistId: selectedTaskId,
+      checklistItemId: selectedTaskId,
+      taskName: taskObj?.task || 'Compliance Objective',
+      department: user.department,
+      submissionDate: new Date().toISOString().split('T')[0],
+      fileUrl: actualFileUrl,
+      fileName: actualFileName,
+      fileType: actualFileType,
+      fileSize: actualFileSize,
+      comment: comment,
+      status: AuditStatus.SUBMITTED
+    };
+
+    try {
+      await api.addEvidence(newEvidence);
       setEvidence(prev => [...prev, newEvidence]);
+      logActivity(user, ActivityType.SUBMISSION, `Submitted evidence for task: ${taskObj?.task || selectedTaskId}`);
 
-      api.addEvidence(newEvidence).then(() => {
-        logActivity(user, ActivityType.SUBMISSION, `Submitted evidence for task: ${taskObj?.task || selectedTaskId}`);
-
-        setSelectedTaskId('');
-        setComment('');
-        setFileName('');
-        setFileUrl('');
-        setIsSubmitting(false);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 5000);
-      }).catch(err => {
-        console.error(err);
-        setIsSubmitting(false);
-        setError("Failed to submit evidence to server");
-      });
-    }, 1200);
+      setSelectedTaskId('');
+      setComment('');
+      setFileName('');
+      setFileType('');
+      setFileSize('');
+      setFileUrl('');
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 5000);
+    } catch (err: any) {
+      console.error('Submission failed:', err);
+      setIsSubmitting(false);
+      setError(err.message || 'Failed to submit evidence to server');
+    }
   };
 
   const mySubmissions = evidence.filter(e => e.userId === user.id);

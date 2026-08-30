@@ -4,9 +4,11 @@ import { User, CAPAReport, Role, Department, ActivityLog, ActivityType, Checklis
 import {
   UserCog, UserPlus, ShieldAlert, Activity, BellRing, Mail, CheckCircle2,
   Search, Filter, X, Save, Power, PowerOff, ListRestart, History,
-  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2, Download
+  ArrowRightCircle, Clock, Info, AlertTriangle, CheckCircle, ListChecks, Plus, Trash2, Download,
+  Building2, ShieldCheck, FolderTree
 } from 'lucide-react';
 import { api } from '../apiClient';
+import { OrganizationManager } from './OrganizationManager';
 
 interface AdminPanelProps {
   capa: CAPAReport[];
@@ -22,7 +24,18 @@ interface AdminPanelProps {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activities, user, logActivity, onResetPassword, onToggleLock, checklists, setChecklists }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'activity' | 'checklists'>('users');
+  const isSuperAdmin = user.role === Role.SUPER_ADMIN;
+  const [activeTab, setActiveTab] = useState<'organizations' | 'departments' | 'users' | 'activity' | 'checklists'>(
+    isSuperAdmin ? 'organizations' : 'users'
+  );
+  const [deptList, setDeptList] = useState<string[]>(() => {
+    const saved = localStorage.getItem('company_departments');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return Object.values(Department);
+  });
+  const [newDeptInput, setNewDeptInput] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department>(Department.HR);
   const [newTask, setNewTask] = useState('');
   const [newFramework, setNewFramework] = useState('');
@@ -46,7 +59,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
     isActive: true,
     isLocked: false,
     loginAttempts: 0,
-    password: 'password123'
+    password: ''
   };
 
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
@@ -59,14 +72,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
         setFormData(prev => ({
           ...prev,
           isLocked: live.isLocked,
-          password: live.password,
           loginAttempts: live.loginAttempts
         }));
       }
     }
   }, [users, editingUser, isModalOpen]);
-
-  const currentMonth = "January";
 
   const exportAuditTrail = () => {
     const headers = ['Timestamp', 'User', 'Department', 'Action', 'Description'];
@@ -86,6 +96,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
     a.click();
   };
 
+  const handleAddDepartment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newDeptInput.trim();
+    if (!trimmed) return;
+    if (deptList.some(d => d.toLowerCase() === trimmed.toLowerCase())) {
+      alert(`Department '${trimmed}' already exists.`);
+      return;
+    }
+    const updated = [...deptList, trimmed];
+    setDeptList(updated);
+    localStorage.setItem('company_departments', JSON.stringify(updated));
+    logActivity(user, ActivityType.SYSTEM, `Created new organizational department: ${trimmed}`);
+    setNewDeptInput('');
+  };
+
+  const handleRemoveDepartment = (deptName: string) => {
+    if (confirm(`Are you sure you want to remove department '${deptName}'?`)) {
+      const updated = deptList.filter(d => d !== deptName);
+      setDeptList(updated);
+      localStorage.setItem('company_departments', JSON.stringify(updated));
+      logActivity(user, ActivityType.SYSTEM, `Removed organizational department: ${deptName}`);
+    }
+  };
+
   const handleSaveUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
@@ -97,17 +131,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
         })
         .catch(err => {
           console.error(err);
-          alert("Failed to update user on server");
+          alert("Failed to update user on server: " + (err.message || 'Error'));
         });
     } else {
       if (newPasswordValue !== confirmPasswordValue) {
         alert('Passwords do not match');
         return;
       }
+      if (newPasswordValue.length < 8) {
+        alert('Password must be at least 8 characters long');
+        return;
+      }
       const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         ...(formData as User),
-        password: (newPasswordValue || 'password123').trim()
+        organizationId: user.organizationId,
+        password: newPasswordValue.trim()
       };
       // Optimistic update
       setUsers(prev => [...prev, newUser]);
@@ -115,7 +154,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
         logActivity(user, ActivityType.SYSTEM, `Provisioned new user: ${formData.name} as ${formData.role}`);
       }).catch(err => {
         console.error(err);
-        alert("Failed to create user on server");
+        alert("Failed to create user on server: " + (err.message || 'Error'));
+        // Revert optimistic update
+        setUsers(prev => prev.filter(u => u.id !== newUser.id));
       });
     }
     setFormData(INITIAL_FORM_DATA);
@@ -124,40 +165,125 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
     setIsModalOpen(false);
   };
 
-  const filteredUsers = users.filter(u =>
-    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    // Multi-tenant isolation: Org Admins only see users within their organization
+    if (!isSuperAdmin && user.organizationId) {
+      if (u.organizationId && u.organizationId !== user.organizationId) {
+        return false;
+      }
+    }
+    return (
+      (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-white tracking-tight leading-tight">Governance <span className="text-blue-500">Console</span></h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Enterprise Security & Access Control</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-1">Enterprise Security & Multi-Tenant Access Control</p>
         </div>
-        <div className="flex gap-3 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5">
+        <div className="flex gap-2 bg-white/[0.03] p-1.5 rounded-2xl border border-white/5 overflow-x-auto">
+          {isSuperAdmin && (
+            <button
+              onClick={() => setActiveTab('organizations')}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'organizations' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+            >
+              <Building2 className="w-3.5 h-3.5" /> Client Orgs & Licenses
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab('departments')}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'departments' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <FolderTree className="w-3.5 h-3.5" /> Departments
+          </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
           >
             User Directory
           </button>
           <button
             onClick={() => setActiveTab('checklists')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'checklists' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'checklists' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
           >
             Checklists
           </button>
           <button
             onClick={() => setActiveTab('activity')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'activity' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'activity' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
           >
             Audit Trail
           </button>
         </div>
       </div>
+
+      {activeTab === 'organizations' && isSuperAdmin && (
+        <OrganizationManager onActivityLog={(act, desc) => logActivity(user, act as ActivityType, desc)} />
+      )}
+
+      {activeTab === 'departments' && (
+        <div className="space-y-8">
+          <div className="bg-white/[0.03] backdrop-blur-2xl p-8 rounded-[40px] border border-white/[0.08] shadow-2xl space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-[10px] font-bold uppercase tracking-wider">Enterprise Architecture</span>
+                <h2 className="text-2xl font-black text-white tracking-tight mt-2">Department Structure & Operational Scope</h2>
+                <p className="text-slate-400 text-xs">Define, add, or remove active operational units and audit scope across your company.</p>
+              </div>
+              <form onSubmit={handleAddDepartment} className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="e.g. Cybersecurity, Compliance..."
+                  value={newDeptInput}
+                  onChange={(e) => setNewDeptInput(e.target.value)}
+                  className="bg-slate-950 border border-white/10 text-white font-medium text-xs px-4 py-3 rounded-2xl outline-none focus:border-blue-500 min-w-[240px]"
+                />
+                <button
+                  type="submit"
+                  disabled={!newDeptInput.trim()}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Add Department
+                </button>
+              </form>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
+              {deptList.map((dept) => {
+                const userCount = users.filter(u => u.department === dept).length;
+                const checklistCount = checklists.filter(c => c.department === dept).length;
+
+                return (
+                  <div key={dept} className="bg-slate-950/60 border border-white/5 p-5 rounded-3xl hover:border-blue-500/30 transition-all group relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-10 h-10 bg-blue-500/10 text-blue-400 rounded-2xl flex items-center justify-center font-bold text-sm border border-blue-500/20">
+                        {dept.charAt(0)}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveDepartment(dept)}
+                        title="Remove Department"
+                        className="p-2 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <h3 className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{dept}</h3>
+                    <div className="mt-3 pt-3 border-t border-white/5 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      <span>{userCount} Users</span>
+                      <span>{checklistCount} Protocols</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'users' ? (
         <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl">
@@ -207,7 +333,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                       <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/5 bg-white/[0.03] text-slate-400`}>
                         {u.role}
                       </span>
-                      {u.isLocked === 1 && (
+                      {Boolean(u.isLocked) && (
                         <span className="ml-2 px-3 py-1.5 bg-red-500/10 text-red-500 text-[9px] font-black rounded-full uppercase tracking-widest border border-red-500/20 animate-pulse">
                           Node Locked
                         </span>
@@ -347,7 +473,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                 onClick={() => {
                   if (newTask.trim()) {
                     const newItem: ChecklistItem = {
-                      id: Math.random().toString(36).substr(2, 9),
+                      id: crypto.randomUUID(),
                       department: selectedDepartment,
                       task: newTask.trim(),
                       framework: newFramework.trim(),
@@ -371,7 +497,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'activity' ? (
         <div className="bg-white/[0.03] backdrop-blur-2xl rounded-[40px] border border-white/[0.08] overflow-hidden shadow-2xl">
           <div className="p-8 border-b border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 max-w-md w-full">
@@ -459,8 +585,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
             )}
           </div>
         </div>
-      )
-      }
+      ) : null}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 sm:p-12">

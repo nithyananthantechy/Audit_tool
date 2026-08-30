@@ -1,15 +1,22 @@
 const request = require('supertest');
 const app = require('../server');
+const api = require('./setup');
 
 describe('Authentication API', () => {
   let token = null;
+  const email = `auth_test_${Date.now()}@nitechspark.in`;
+  const password = 'TestPassword#2026!';
+
+  beforeAll(async () => {
+    await api.seedUser(email, password, 'Super Admin', 'Admin');
+  });
 
   describe('POST /api/auth/login', () => {
     it('should login with valid credentials', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'admin@desicrew.in', password: 'password123' });
-      
+        .send({ email, password });
+
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.token).toBeDefined();
@@ -20,8 +27,8 @@ describe('Authentication API', () => {
     it('should reject invalid email', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'invalid@test.com', password: 'password123' });
-      
+        .send({ email: 'nonexistent@test.com', password: 'password123' });
+
       expect(res.status).toBe(401);
       expect(res.body.error).toBeDefined();
     });
@@ -29,8 +36,8 @@ describe('Authentication API', () => {
     it('should reject invalid password', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'admin@desicrew.in', password: 'wrongpassword' });
-      
+        .send({ email, password: 'wrongpassword' });
+
       expect(res.status).toBe(401);
     });
 
@@ -38,15 +45,15 @@ describe('Authentication API', () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({ password: 'password123' });
-      
+
       expect(res.status).toBe(400);
     });
 
     it('should reject missing password', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'admin@desicrew.in' });
-      
+        .send({ email });
+
       expect(res.status).toBe(400);
     });
   });
@@ -56,24 +63,22 @@ describe('Authentication API', () => {
       const res = await request(app)
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${token}`);
-      
+
       expect(res.status).toBe(200);
       expect(res.body.user).toBeDefined();
-      expect(res.body.user.email).toBeDefined();
+      expect(res.body.user.email.toLowerCase()).toBe(email.toLowerCase());
     });
 
     it('should reject request without token', async () => {
-      const res = await request(app)
-        .get('/api/auth/me');
-      
+      const res = await request(app).get('/api/auth/me');
       expect(res.status).toBe(401);
     });
 
     it('should reject request with invalid token', async () => {
       const res = await request(app)
         .get('/api/auth/me')
-        .set('Authorization', 'Bearer invalid-token');
-      
+        .set('Authorization', 'Bearer invalid-token-123');
+
       expect(res.status).toBe(401);
     });
   });
@@ -83,7 +88,7 @@ describe('Authentication API', () => {
       const res = await request(app)
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${token}`);
-      
+
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });

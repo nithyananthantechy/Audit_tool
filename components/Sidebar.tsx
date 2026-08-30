@@ -23,17 +23,28 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ role, department, activeTab, setActiveTab, onLogout }) => {
   const menuItems = [
-    { id: 'admin', label: 'Admin Panel', icon: Users, roles: [Role.SUPER_ADMIN] },
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN] },
-    { id: 'dept_hub', label: `${department} Hub`, icon: Building2, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR] },
-    { id: 'checklists', label: 'My Checklists', icon: ClipboardCheck, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR] },
-    { id: 'capa', label: 'CAPA Reports', icon: FileText, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR] },
-    { id: 'approvals', label: 'Audit Inbox', icon: CheckSquare, roles: [Role.INTERNAL_AUDITOR] },
-    { id: 'executive', label: 'Compliance Sign-off', icon: ShieldCheck, roles: [Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN] },
-    { id: 'auditlog', label: 'Audit Log', icon: Fingerprint, roles: [Role.SUPER_ADMIN, Role.EXTERNAL_AUDITOR, Role.INTERNAL_AUDITOR] },
+    { id: 'admin', label: 'Admin Panel', icon: Users, roles: [Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'governance', label: 'Governance & Risk', icon: ShieldCheck, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'dept_hub', label: `${department} Hub`, icon: Building2, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'checklists', label: 'My Checklists', icon: ClipboardCheck, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'capa', label: 'CAPA Reports', icon: FileText, roles: [Role.CONTRIBUTOR, Role.TEAM_LEAD, Role.MANAGER, Role.HR, Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'approvals', label: 'Audit Inbox', icon: CheckSquare, roles: [Role.INTERNAL_AUDITOR, Role.EXTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'executive', label: 'Compliance Sign-off', icon: ShieldCheck, roles: [Role.EXTERNAL_AUDITOR, Role.INTERNAL_AUDITOR, Role.SUPER_ADMIN, Role.ORG_ADMIN] },
+    { id: 'auditlog', label: 'Audit Log', icon: Fingerprint, roles: [Role.SUPER_ADMIN, Role.EXTERNAL_AUDITOR, Role.INTERNAL_AUDITOR, Role.ORG_ADMIN, Role.MANAGER, Role.HR, Role.TEAM_LEAD] },
   ];
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(role));
+  const isRoleAllowed = (allowedRoles: Role[], userRole: Role | string) => {
+    if (allowedRoles.includes(userRole as Role)) return true;
+    const r = (userRole || '').toString().toLowerCase();
+    if ((r.includes('manager') || r.includes('hr') || r.includes('lead')) && (allowedRoles.includes(Role.MANAGER) || allowedRoles.includes(Role.HR) || allowedRoles.includes(Role.TEAM_LEAD))) return true;
+    if (r.includes('auditor') && (allowedRoles.includes(Role.INTERNAL_AUDITOR) || allowedRoles.includes(Role.EXTERNAL_AUDITOR))) return true;
+    if (r.includes('admin') && (allowedRoles.includes(Role.SUPER_ADMIN) || allowedRoles.includes(Role.ORG_ADMIN))) return true;
+    if ((r.includes('contributor') || r.includes('staff')) && allowedRoles.includes(Role.CONTRIBUTOR)) return true;
+    return false;
+  };
+
+  const filteredItems = menuItems.filter(item => isRoleAllowed(item.roles, role));
 
   return (
     <div className="w-64 bg-slate-950/40 backdrop-blur-xl border-r border-white/5 text-white flex flex-col sticky top-0 h-screen z-50">

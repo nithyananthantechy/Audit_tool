@@ -24,7 +24,7 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
     setAiLoading(prev => ({ ...prev, [id]: true }));
     try {
       const response = await api.getAIInsights(context, type);
-      setAiInsights(prev => ({ ...prev, [id]: response.insights }));
+      setAiInsights(prev => ({ ...prev, [id]: response.summary || (response.findings ? response.findings.join(' ') : 'Analysis complete.') }));
     } catch (err) {
       console.error(err);
       setAiInsights(prev => ({ ...prev, [id]: 'AI analysis failed. Please ensure GEMINI_API_KEY is valid.' }));
@@ -37,42 +37,73 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
   const pendingEvidence = evidence.filter(e => e.status === AuditStatus.SUBMITTED);
   const pendingCapa = capa.filter(d => d.status === AuditStatus.SUBMITTED);
 
-  if (user.role !== Role.INTERNAL_AUDITOR) {
+  const allowedReviewRoles = [
+    Role.INTERNAL_AUDITOR,
+    Role.SUPER_ADMIN,
+    Role.ORG_ADMIN,
+    Role.EXTERNAL_AUDITOR
+  ];
+
+  const isReviewAllowed = allowedReviewRoles.includes(user.role) || (user.role || '').toString().toLowerCase().includes('auditor') || (user.role || '').toString().toLowerCase().includes('admin');
+  if (!isReviewAllowed) {
     return (
-      <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+      <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white/5 rounded-3xl border border-white/10 shadow-sm backdrop-blur-md">
         <ShieldAlert size={48} className="text-red-500 mb-4" />
-        <h2 className="text-xl font-bold text-slate-900">Access Restricted</h2>
-        <p className="text-slate-500 max-w-sm mt-2">Only Internal Auditors have permission to review and approve compliance evidence.</p>
+        <h2 className="text-xl font-bold text-white">Access Restricted</h2>
+        <p className="text-slate-400 max-w-sm mt-2">Only Auditors, Organization Admins, Managers, and Super Admins have authority to review and approve compliance evidence.</p>
       </div>
     );
   }
 
-  const handleEvidenceAction = (id: string, approve: boolean) => {
+  const handleEvidenceAction = async (id: string, approve: boolean) => {
     const target = evidence.find(e => e.id === id);
-    const task = DEPARTMENT_CHECKLISTS.find(t => t.id === target?.checklistItemId)?.task;
+    const taskObj = checklists.find(t => t.id === (target?.checklistId || target?.checklistItemId));
+    const task = taskObj?.task || 'Compliance Objective';
+    const newStatus = approve ? AuditStatus.MANAGER_APPROVED : AuditStatus.REJECTED;
 
     setEvidence(prev => prev.map(e =>
       e.id === id
-        ? { ...e, status: approve ? AuditStatus.MANAGER_APPROVED : AuditStatus.REJECTED, managerComment: feedback }
+        ? { ...e, status: newStatus, managerComment: feedback }
         : e
     ));
 
-    logActivity(user, approve ? ActivityType.APPROVAL : ActivityType.REJECTION,
-      `${approve ? 'Internal Audit Approved' : 'Internal Audit Rejected'} for task: ${task}. Feedback: ${feedback || 'No feedback'}`);
+    try {
+      await api.updateEvidence({
+        id,
+        status: newStatus,
+        managerComment: feedback
+      });
+      logActivity(user, approve ? ActivityType.APPROVAL : ActivityType.REJECTION,
+        `${approve ? 'Internal Audit Approved' : 'Internal Audit Rejected'} for task: ${task}. Feedback: ${feedback || 'No feedback'}`);
+    } catch (err: any) {
+      console.error('Failed to persist evidence status:', err);
+      alert('Failed to save status on server: ' + (err.message || 'Unknown error'));
+    }
 
     setFeedback('');
   };
 
-  const handleCapaAction = (id: string, approve: boolean) => {
+  const handleCapaAction = async (id: string, approve: boolean) => {
     const target = capa.find(d => d.id === id);
+    const newStatus = approve ? AuditStatus.MANAGER_APPROVED : AuditStatus.REJECTED;
+
     setCapa(prev => prev.map(d =>
       d.id === id
-        ? { ...d, status: approve ? AuditStatus.MANAGER_APPROVED : AuditStatus.REJECTED }
+        ? { ...d, status: newStatus }
         : d
     ));
 
-    logActivity(user, approve ? ActivityType.APPROVAL : ActivityType.REJECTION,
-      `Internal Auditor ${approve ? 'Approved' : 'Rejected'} CAPA report for ${target?.userName}.`);
+    try {
+      await api.updateCapa({
+        id,
+        status: newStatus
+      });
+      logActivity(user, approve ? ActivityType.APPROVAL : ActivityType.REJECTION,
+        `Internal Auditor ${approve ? 'Approved' : 'Rejected'} CAPA report for ${target?.userName || 'User'}.`);
+    } catch (err: any) {
+      console.error('Failed to persist CAPA status:', err);
+      alert('Failed to save CAPA review on server: ' + (err.message || 'Unknown error'));
+    }
   };
 
   return (
@@ -112,8 +143,10 @@ const ManagerApproval: React.FC<ManagerApprovalProps> = ({ user, evidence, setEv
               </div>
             ) : (
               pendingEvidence.map(e => {
-                const taskObj = checklists.find(t => t.id === e.checklistItemId);
-                const task = taskObj?.task || 'Unknown Task';
+                const allChecklists = [...(checklists || []), ...DEPARTMENT_CHECKLISTS];
+                const targetId = e.checklistItemId || e.checklistId;
+                const taskObj = allChecklists.find(t => t.id === targetId);
+                const task = (e as any).taskName || (e as any).task || taskObj?.task || 'Compliance Objective';
                 return (
                   <div key={e.id} className="p-10 hover:bg-white/[0.01] transition-all group">
                     <div className="flex justify-between items-start mb-8">

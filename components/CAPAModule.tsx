@@ -9,6 +9,7 @@ interface CAPAProps {
   user: User;
   reports: CAPAReport[];
   setReports: React.Dispatch<React.SetStateAction<CAPAReport[]>>;
+  logActivity?: (user: User, action: any, description: string) => void;
 }
 
 const MAX_CAPA_LENGTH = 2000;
@@ -22,8 +23,11 @@ const ALLOWED_TYPES = [
 ];
 
 const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
+  const currentYear = new Date().getFullYear();
   const [month, setMonth] = useState('January');
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
   const [fileSize, setFileSize] = useState('');
   const [fileUrl, setFileUrl] = useState('');
@@ -48,19 +52,20 @@ const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
         return;
       }
 
+      setSelectedFile(file);
       setFileName(file.name);
       setFileSize((file.size / 1024 / 1024).toFixed(2) + ' MB');
-      setFileUrl(`file://${file.name}`);
     }
   };
 
   const removeFile = () => {
+    setSelectedFile(null);
     setFileName('');
     setFileSize('');
     setFileUrl('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -69,53 +74,67 @@ const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
       return;
     }
 
-    if (!fileUrl) {
+    if (!fileName && !selectedFile) {
       setError('A CAPA report document is mandatory.');
       return;
     }
 
     // Check for duplicate submission for the same month/year
-    const duplicate = reports.find(r => r.userId === user.id && r.month === month && r.year === 2024);
+    const duplicate = reports.find(r => r.userId === user.id && r.month === month && Number(r.year) === selectedYear);
     if (duplicate && duplicate.status !== AuditStatus.REJECTED) {
-      setError(`A CAPA report for ${month} 2024 has already been submitted.`);
+      setError(`A CAPA report for ${month} ${selectedYear} has already been submitted.`);
       return;
     }
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const newReport: CAPAReport = {
-        id: Math.random().toString(36).substr(2, 9),
-        userId: user.id,
-        userName: user.name,
-        department: user.department,
-        month,
-        year: 2024,
-        content,
-        status: AuditStatus.SUBMITTED,
-        submissionDate: new Date().toISOString().split('T')[0],
-        fileName,
-        fileUrl,
-        fileSize
-      };
+    let actualFileUrl = fileUrl;
+    let actualFileName = fileName;
+    let actualFileSize = fileSize;
 
-      // Optimistic update
+    if (selectedFile) {
+      try {
+        const uploadResult = await api.uploadFile(selectedFile);
+        actualFileUrl = uploadResult.fileUrl;
+        actualFileName = uploadResult.fileName;
+        actualFileSize = uploadResult.fileSize;
+      } catch (uploadErr: any) {
+        setError(uploadErr.message || 'File upload failed');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const newReport: CAPAReport = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      userName: user.name,
+      department: user.department,
+      month,
+      year: selectedYear,
+      content,
+      status: AuditStatus.SUBMITTED,
+      submissionDate: new Date().toISOString().split('T')[0],
+      fileName: actualFileName,
+      fileUrl: actualFileUrl,
+      fileSize: actualFileSize
+    };
+
+    try {
+      await api.addCapa(newReport);
       setReports(prev => [...prev, newReport]);
-
-      api.addCapa(newReport).then(() => {
-        setContent('');
-        setFileName('');
-        setFileSize('');
-        setFileUrl('');
-        setIsSubmitting(false);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 5000);
-      }).catch(err => {
-        console.error(err);
-        setIsSubmitting(false);
-        setError("Failed to create report on server");
-      });
-    }, 1500);
+      setContent('');
+      setFileName('');
+      setFileSize('');
+      setFileUrl('');
+      setIsSubmitting(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 5000);
+    } catch (err: any) {
+      console.error(err);
+      setIsSubmitting(false);
+      setError(err.message || 'Failed to create report on server');
+    }
   };
 
   const myReports = reports.filter(r => r.userId === user.id);
@@ -162,7 +181,7 @@ const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
                     onChange={(e) => setMonth(e.target.value)}
                     className="w-full h-14 px-6 bg-slate-950 border border-white/10 rounded-2xl text-sm font-bold text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none appearance-none"
                   >
-                    {months.map(m => <option key={m} value={m} className="bg-slate-900">{m} 2024</option>)}
+                    {months.map(m => <option key={m} value={m} className="bg-slate-900">{m} {selectedYear}</option>)}
                   </select>
                   <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 rotate-90" size={18} />
                 </div>

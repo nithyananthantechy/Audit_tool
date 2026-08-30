@@ -58,7 +58,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
 
   // Build checklist status matrix for current user
   const submittedTaskIds = new Set(
-    evidence.filter(e => e.userId === user.id).map(e => e.checklistItemId)
+    evidence.filter(e => e.userId === user.id).map(e => e.checklistId || e.checklistItemId)
   );
 
   return (
@@ -231,17 +231,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, evidence, capa, checklists,
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50/5">
-                {myEvidence.slice(-5).reverse().map((e) => {
-                  const taskLabel = checklists.find(t => t.id === e.checklistItemId)?.task || (e.checklistItemId || 'UNKNOWN').toUpperCase();
+                {myEvidence.filter(e => e && e.status).slice(-5).reverse().map((e) => {
+                  const checklistTask = checklists.find(t => t.id === e.checklistItemId)?.task;
+                  const taskLabel = checklistTask || (e.description && e.description !== '--' ? e.description : null) || (e.department ? `${e.department} Compliance Assessment Protocol` : 'Standard Compliance Protocol');
+                  const displayComment = (e.comment && e.comment !== '--' && e.comment.trim() !== '') ? e.comment : (e.fileName ? `Evidence Document: ${e.fileName}` : `Submitted by ${e.userName || 'Department Staff'}`);
+
                   return (
                     <tr key={e.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="py-5">
                         <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors tracking-tight">{taskLabel}</p>
-                        <p className="text-[10px] text-slate-500 truncate max-w-[250px] mt-1 font-medium italic opacity-60">"{e.comment}"</p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[280px] mt-1 font-medium italic opacity-80">{displayComment}</p>
                       </td>
-                      <td className="py-5 text-[10px] font-black text-slate-500 text-center uppercase tracking-tighter">{e.submissionDate}</td>
+                      <td className="py-5 text-[10px] font-black text-slate-500 text-center uppercase tracking-tighter">{e.submissionDate || 'Recent'}</td>
                       <td className="py-5 text-right">
-                        <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border ${STATUS_COLORS[e.status]}`}>
+                        <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border ${STATUS_COLORS[e.status] || 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                           {e.status}
                         </span>
                       </td>

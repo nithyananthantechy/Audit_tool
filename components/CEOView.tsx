@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-/* Fix: Added User and ActivityType to the imports */
-import { ActivityType, CAPAReport, Evidence, Role, User } from '../types';
-import { STATUS_COLORS } from '../constants';
+import { ActivityType, AuditStatus, CAPAReport, Department, Evidence, Role, User } from '../types';
+import { DEPARTMENT_CHECKLISTS, STATUS_COLORS } from '../constants';
+import { api } from '../apiClient';
 import ReportGenerator from './ReportGenerator';
 import { Download, ShieldCheck, CheckCircle, FileText, ListChecks, ShieldAlert } from 'lucide-react';
 
@@ -19,12 +19,21 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
   const [filterDept, setFilterDept] = useState<'All' | string>('All');
   const [activeReportTab, setActiveReportTab] = useState<'evidence' | 'capa'>('evidence');
 
-  if (user.role !== Role.EXTERNAL_AUDITOR && user.role !== Role.SUPER_ADMIN) {
+  const allowedSignoffRoles = [
+    Role.EXTERNAL_AUDITOR,
+    Role.INTERNAL_AUDITOR,
+    Role.SUPER_ADMIN,
+    Role.ORG_ADMIN
+  ];
+
+  const isSignoffAllowed = allowedSignoffRoles.includes(user.role) || (user.role || '').toString().toLowerCase().includes('auditor') || (user.role || '').toString().toLowerCase().includes('admin');
+
+  if (!isSignoffAllowed) {
     return (
-      <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white rounded-3xl border border-slate-200 shadow-sm">
+      <div className="h-96 flex flex-col items-center justify-center text-center p-8 bg-white/5 rounded-3xl border border-white/10 shadow-sm backdrop-blur-md">
         <ShieldAlert size={48} className="text-red-500 mb-4" />
-        <h2 className="text-xl font-bold text-slate-900">Permission Denied</h2>
-        <p className="text-slate-500 max-w-sm mt-2">Only External Auditors (CGO/CEO) have authority for final corporate compliance certification.</p>
+        <h2 className="text-xl font-bold text-white">Permission Denied</h2>
+        <p className="text-slate-400 max-w-sm mt-2">Only External Auditors, Executive Officers, Organization Admins, or Super Admins have authority for final corporate compliance certification.</p>
       </div>
     );
   }
@@ -32,14 +41,24 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
   const filteredEvidence = filterDept === 'All' ? evidence : evidence.filter(e => e.department === filterDept);
   const filteredCapa = filterDept === 'All' ? capa : capa.filter(d => d.department === filterDept);
 
-  const handleFinalAuditEvidence = (id: string) => {
-    setEvidence(prev => prev.map(e => e.id === id ? { ...e, status: 'Final Audit Completed' as any } : e));
-    logActivity(user, ActivityType.APPROVAL, `External Auditor performed final sign-off for checklist item ID: ${id}`);
+  const handleFinalAuditEvidence = async (id: string) => {
+    setEvidence(prev => prev.map(e => e.id === id ? { ...e, status: AuditStatus.FINAL_AUDIT_COMPLETED } : e));
+    try {
+      await api.updateEvidence({ id, status: AuditStatus.FINAL_AUDIT_COMPLETED });
+      logActivity(user, ActivityType.APPROVAL, `External Auditor performed final sign-off for checklist item ID: ${id}`);
+    } catch (err) {
+      console.error('Failed to persist final sign-off on server:', err);
+    }
   };
 
-  const handleFinalAuditCapa = (id: string) => {
-    setCapa(prev => prev.map(d => d.id === id ? { ...d, status: 'Final Audit Completed' as any } : d));
-    logActivity(user, ActivityType.APPROVAL, `External Auditor certified CAPA report ID: ${id}`);
+  const handleFinalAuditCapa = async (id: string) => {
+    setCapa(prev => prev.map(d => d.id === id ? { ...d, status: AuditStatus.FINAL_AUDIT_COMPLETED } : d));
+    try {
+      await api.updateCapa({ id, status: AuditStatus.FINAL_AUDIT_COMPLETED });
+      logActivity(user, ActivityType.APPROVAL, `External Auditor certified CAPA report ID: ${id}`);
+    } catch (err) {
+      console.error('Failed to persist final CAPA certification:', err);
+    }
   };
 
   return (
@@ -79,16 +98,18 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
               <FileText size={16} /> CAPA Ledger
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {['All', ...Object.values(Department)].map(d => (
-              <button
-                key={d}
-                onClick={() => setFilterDept(d as any)}
-                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filterDept === d ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-lg' : 'bg-white/5 text-slate-500 border border-white/5 hover:border-white/10 hover:text-white'}`}
-              >
-                {d}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Department:</span>
+            <select
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value as any)}
+              className="bg-slate-950 text-white font-bold text-xs rounded-xl px-4 py-2.5 border border-white/10 outline-none focus:border-blue-500 transition-all cursor-pointer"
+            >
+              <option value="All">All Departments</option>
+              {Object.values(Department).map(d => (
+                <option key={d} value={d} className="bg-slate-900">{d}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -96,26 +117,31 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
           <table className="w-full text-left">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/5">
-                <th className="px-8 py-5 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Corporate Directive</th>
+                <th className="px-8 py-5 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Corporate Directive / Audit Task</th>
                 <th className="px-8 py-5 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Validation Status</th>
                 <th className="px-8 py-5 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] text-center">Certification Protocol</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {activeReportTab === 'evidence' ? (
-                filteredEvidence.filter(e => e.status !== AuditStatus.REJECTED && e.status !== AuditStatus.DRAFT).map(e => (
-                  <tr key={e.id} className="hover:bg-white/[0.01] transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-blue-600/10 text-blue-400 flex items-center justify-center rounded-xl font-black text-sm border border-blue-500/10">
-                          {e.department.charAt(0)}
+                filteredEvidence.filter(e => e.status !== AuditStatus.REJECTED && e.status !== AuditStatus.DRAFT).map(e => {
+                  const taskTitle = DEPARTMENT_CHECKLISTS.find(t => t.id === e.checklistItemId)?.task || (e.description && e.description !== '--' ? e.description : `${e.department} Security Directive`);
+                  const displayNote = (e.comment && e.comment !== '--' && e.comment.trim() !== '') ? e.comment : (e.fileName ? `File: ${e.fileName}` : `Submitted by ${e.userName || 'Department Staff'}`);
+
+                  return (
+                    <tr key={e.id} className="hover:bg-white/[0.01] transition-colors group">
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-blue-600/10 text-blue-400 flex items-center justify-center rounded-xl font-black text-sm border border-blue-500/10 shrink-0">
+                            {e.department.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20">{e.department}</span>
+                            <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors tracking-tight mt-1">{taskTitle}</p>
+                            <p className="text-[10px] text-slate-400 font-medium mt-1 italic leading-relaxed max-w-md">{displayNote}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight">{e.department} Audit Unit #{(e.checklistItemId || '').slice(-4).toUpperCase()}</p>
-                          <p className="text-[10px] text-slate-500 font-medium mt-1 italic leading-relaxed max-w-md">"{e.comment}"</p>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
                     <td className="px-8 py-6">
                       <span className={`text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest border shadow-sm ${STATUS_COLORS[e.status]}`}>
                         {e.status}
@@ -137,8 +163,8 @@ const CEOView: React.FC<CEOViewProps> = ({ evidence, capa, setEvidence, setCapa,
                       )}
                     </td>
                   </tr>
-                ))
-              ) : (
+                );
+              })) : (
                 filteredCapa.map(d => (
                   <tr key={d.id} className="hover:bg-white/[0.01] transition-colors group">
                     <td className="px-8 py-6">

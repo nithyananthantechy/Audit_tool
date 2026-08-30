@@ -3,11 +3,11 @@ import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../co
 import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string }>;
-  onVerifyMfa?: (userId: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string; challengeToken?: string }>;
+  onVerifyMfa: (userId: string, token: string, challengeToken?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
-const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +15,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [mfaToken, setMfaToken] = useState('');
   const [tempUserId, setTempUserId] = useState<string | null>(null);
+  const [challengeToken, setChallengeToken] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,11 +30,12 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin }) => {
         setError(result.error || 'Invalid credentials');
       } else if (result.mfaRequired) {
         setTempUserId(result.userId || null);
+        setChallengeToken(result.challengeToken);
         setStep(2);
       }
     } else {
       if (onVerifyMfa && tempUserId) {
-        const result = await onVerifyMfa(tempUserId, mfaToken);
+        const result = await onVerifyMfa(tempUserId, mfaToken, challengeToken);
         setIsLoading(false);
         if (!result.success) {
           setError(result.error || 'Invalid MFA code');
