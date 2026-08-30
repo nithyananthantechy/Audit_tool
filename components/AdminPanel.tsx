@@ -53,12 +53,20 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
   const [orgList, setOrgList] = useState<any[]>([]);
 
   useEffect(() => {
-    api.getOrganizations()
+    if (isSuperAdmin) {
+      api.getOrganizations()
+        .then(res => {
+          if (res && res.organizations) setOrgList(res.organizations);
+        })
+        .catch(err => console.error('Failed to load organizations:', err));
+    }
+
+    api.getDepartments()
       .then(res => {
-        if (res && res.organizations) setOrgList(res.organizations);
+        if (res && res.departments) setDeptList(res.departments);
       })
-      .catch(err => console.error('Failed to load organizations:', err));
-  }, []);
+      .catch(err => console.error('Failed to load departments from server:', err));
+  }, [isSuperAdmin]);
 
   const INITIAL_FORM_DATA: Partial<User> = {
     name: '',
@@ -106,7 +114,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
     a.click();
   };
 
-  const handleAddDepartment = (e: React.FormEvent) => {
+  const handleAddDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newDeptInput.trim();
     if (!trimmed) return;
@@ -114,19 +122,32 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
       alert(`Department '${trimmed}' already exists.`);
       return;
     }
-    const updated = [...deptList, trimmed];
-    setDeptList(updated);
-    localStorage.setItem('company_departments', JSON.stringify(updated));
-    logActivity(user, ActivityType.SYSTEM, `Created new organizational department: ${trimmed}`);
-    setNewDeptInput('');
-  };
 
-  const handleRemoveDepartment = (deptName: string) => {
-    if (confirm(`Are you sure you want to remove department '${deptName}'?`)) {
-      const updated = deptList.filter(d => d !== deptName);
+    try {
+      await api.createDepartment(trimmed);
+      const updated = [...deptList, trimmed];
       setDeptList(updated);
       localStorage.setItem('company_departments', JSON.stringify(updated));
-      logActivity(user, ActivityType.SYSTEM, `Removed organizational department: ${deptName}`);
+      logActivity(user, ActivityType.SYSTEM, `Created new organizational department: ${trimmed}`);
+      setNewDeptInput('');
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to add department on server: ' + (err.message || 'Error'));
+    }
+  };
+
+  const handleRemoveDepartment = async (deptName: string) => {
+    if (confirm(`Are you sure you want to remove department '${deptName}'?`)) {
+      try {
+        await api.deleteDepartment(deptName);
+        const updated = deptList.filter(d => d !== deptName);
+        setDeptList(updated);
+        localStorage.setItem('company_departments', JSON.stringify(updated));
+        logActivity(user, ActivityType.SYSTEM, `Removed organizational department: ${deptName}`);
+      } catch (err: any) {
+        console.error(err);
+        alert('Failed to remove department on server: ' + (err.message || 'Error'));
+      }
     }
   };
 
@@ -638,7 +659,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
                   <select
                     value={formData.organizationId || user.organizationId || 'org-niutechspark'}
                     onChange={e => setFormData({ ...formData, organizationId: e.target.value })}
-                    className="w-full bg-slate-950 border border-blue-500/30 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none"
+                    disabled={!isSuperAdmin}
+                    className="w-full bg-slate-950 border border-blue-500/30 rounded-2xl px-5 py-4 text-sm font-bold text-white outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {orgList.length > 0 ? (
                       orgList.map(o => <option key={o.id} value={o.id} className="bg-slate-900">{o.name} ({o.code})</option>)

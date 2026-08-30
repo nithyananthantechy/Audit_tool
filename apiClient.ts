@@ -315,7 +315,10 @@ export const api = {
   createDPDPRecord: async (recordData: any) => fetchJSON(`${API_Base}/dpdp-inventory`, { method: 'POST', body: JSON.stringify(recordData) }),
   getIncidents: async () => fetchJSON(`${API_Base}/incidents`),
   createIncident: async (incidentData: any) => fetchJSON(`${API_Base}/incidents`, { method: 'POST', body: JSON.stringify(incidentData) }),
-  getTraceability: async (findingId: string) => fetchJSON(`${API_Base}/traceability/${encodeURIComponent(findingId)}`)
+  getTraceability: async (findingId: string) => fetchJSON(`${API_Base}/traceability/${encodeURIComponent(findingId)}`),
+  getDepartments: async () => fetchJSON(`${API_Base}/departments`),
+  createDepartment: async (name: string) => fetchJSON(`${API_Base}/departments`, { method: 'POST', body: JSON.stringify({ name }) }),
+  deleteDepartment: async (name: string) => fetchJSON(`${API_Base}/departments/${encodeURIComponent(name)}`, { method: 'DELETE' })
 };
 
 export const apiClient = api;

@@ -128,7 +128,8 @@ const inMemoryTables = {
   data_assets: [],
   privacy_requests: [],
   incidents: [],
-  regulatory_obligations: []
+  regulatory_obligations: [],
+  departments: []
 };
 
 class MockDatabase {
@@ -992,6 +993,12 @@ async function initDefaults() {
         status TEXT DEFAULT 'Compliant',
         reviewDate TEXT,
         organizationId TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS departments (
+        id TEXT PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        organizationId TEXT,
+        createdAt TEXT NOT NULL
     );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS mustChangePassword SMALLINT DEFAULT 0;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS createdAt TEXT;
@@ -2705,7 +2712,48 @@ app.get('/api/analytics/compliance-score', authMiddleware, async (req, res) => {
 
 // ============================================================================
 // ENTERPRISE GRC ENGINE API ENDPOINTS
-// ============================================================================
+// Department Management Endpoints
+app.get('/api/departments', authMiddleware, async (req, res) => {
+  try {
+    const orgId = req.user.organizationId || 'org-niutechspark';
+    const dbDepts = await db.prepare('SELECT name FROM departments WHERE organizationId IS NULL OR organizationId = ?').all(orgId);
+    const customNames = (dbDepts || []).map(d => d.name);
+    const defaults = ['HR', 'IT', 'Admin', 'Operations', 'Audit', 'Finance', 'Legal', 'Quality Assurance', 'Security', 'Procurement', 'Sales', 'Marketing', 'Research & Development', 'Supply Chain'];
+    const merged = Array.from(new Set([...defaults, ...customNames]));
+    res.json({ success: true, departments: merged });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch departments.' });
+  }
+});
+
+app.post('/api/departments', authMiddleware, requireRole('Super Admin', 'Org Admin'), async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Department name is required.' });
+    const trimmed = name.trim();
+    const id = crypto.randomUUID();
+    const orgId = req.user.organizationId || 'org-niutechspark';
+
+    await db.prepare('INSERT INTO departments (id, name, organizationId, createdAt) VALUES (?, ?, ?, ?)').run(id, trimmed, orgId, new Date().toISOString());
+    res.status(201).json({ success: true, name: trimmed });
+  } catch (err) {
+    if (err.message && err.message.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'Department already exists.' });
+    }
+    res.status(500).json({ error: 'Failed to create department.' });
+  }
+});
+
+app.delete('/api/departments/:name', authMiddleware, requireRole('Super Admin', 'Org Admin'), async (req, res) => {
+  try {
+    const { name } = req.params;
+    const orgId = req.user.organizationId || 'org-niutechspark';
+    await db.prepare('DELETE FROM departments WHERE name = ? AND (organizationId IS NULL OR organizationId = ?)').run(name, orgId);
+    res.json({ success: true, name });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete department.' });
+  }
+});
 
 app.get('/api/audits', authMiddleware, async (req, res) => {
   try {
