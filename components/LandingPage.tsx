@@ -55,7 +55,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
           ? 'h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/[0.06] shadow-2xl shadow-black/40'
           : 'h-20 bg-transparent'
       }`}>
-        <SparkAuditBrandLogo size="sm" showSubtitle={false} />
+        <SparkAuditBrandLogo size="md" showSubtitle={false} />
 
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-1 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">

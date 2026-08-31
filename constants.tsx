@@ -8,23 +8,23 @@ export const NITECHSPARK_LOGO = "/logo.png";
 
 /* ─────────────────────────────────────────────
    SparkAuditBrandLogo — uses the Canva PNG logo
-   Horizontal lockup: image + optional tagline text
+   Horizontal lockup: transparent image logo
    ───────────────────────────────────────────── */
 export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubtitle?: boolean }> = ({
   size = 'md',
   showSubtitle = false,
 }) => {
-  const heights = { sm: 'h-12', md: 'h-16', lg: 'h-24' };
+  const heights = { sm: 'h-10', md: 'h-14', lg: 'h-20' };
 
   return (
     <div className="flex flex-col items-start select-none group">
       <img
         src={NITECHSPARK_LOGO}
         alt="SparkAudit Logo"
-        className={`${heights[size]} w-auto object-contain mix-blend-screen transition-transform duration-300 group-hover:scale-105`}
+        className={`${heights[size]} w-auto object-contain mix-blend-screen drop-shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-transform duration-300 group-hover:scale-105`}
       />
       {showSubtitle && (
-        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.25em] -mt-2 pl-2">
+        <span className="text-[9px] font-black text-cyan-400/80 uppercase tracking-[0.25em] -mt-1 pl-1">
           Enterprise GRC Platform
         </span>
       )}
@@ -35,16 +35,16 @@ export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubt
 /* ─────────────────────────────────────────────
    SparkAuditIcon — icon/logo for login page
    ───────────────────────────────────────────── */
-export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 120 }) => {
+export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 110 }) => {
   return (
     <div className="relative inline-flex items-center justify-center group">
       {/* ambient glow behind the logo */}
-      <div className="absolute inset-0 scale-125 bg-blue-600/15 blur-2xl rounded-full group-hover:bg-blue-500/25 transition-all duration-700" />
+      <div className="absolute inset-0 scale-125 bg-gradient-to-r from-cyan-500/20 via-blue-600/20 to-indigo-500/20 blur-3xl rounded-full group-hover:opacity-100 transition-all duration-700" />
       <img
         src={NITECHSPARK_LOGO}
         alt="SparkAudit"
         style={{ height: size, width: 'auto' }}
-        className="relative z-10 object-contain mix-blend-screen transition-transform duration-500 group-hover:scale-105"
+        className="relative z-10 object-contain mix-blend-screen drop-shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
       />
     </div>
   );
