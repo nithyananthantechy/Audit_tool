@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
-import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert, X } from 'lucide-react';
+import { api } from '../apiClient';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string; challengeToken?: string }>;
@@ -47,6 +48,39 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
     }
   };
 
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetPassword, setResetPassword] = useState('NitechSpark#2026');
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setResetMessage(null);
+    try {
+      await api.resetPassword(resetEmail, resetPassword);
+      setResetMessage('Password updated successfully! You can now log in.');
+      setEmail(resetEmail);
+      setPassword(resetPassword);
+      setTimeout(() => {
+        setIsResetModalOpen(false);
+        setResetMessage(null);
+      }, 1500);
+    } catch (err: any) {
+      setResetMessage(err.message || 'Failed to reset password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const demoAccounts = [
+    { label: 'Super Admin', email: 'admin@nitechspark.in' },
+    { label: 'NitechSpark HR', email: 'hr@nitechspark.in' },
+    { label: 'NSK HR', email: 'hr@nskgroups.com' },
+    { label: 'Apex Admin', email: 'orgadmin@apex.com' },
+    { label: 'Auditor', email: 'auditor.internal@nitechspark.in' }
+  ];
+
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-6 bg-slate-950">
       {/* Premium Mesh Gradient Background */}
@@ -82,7 +116,28 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
             </div>
           </div>
 
-          <div className="px-10 pb-12 space-y-8">
+          <div className="px-10 pb-12 space-y-6">
+            {/* Quick Login Chips for Demo Ease */}
+            <div className="space-y-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block text-center">Quick Demo Account Switch</span>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {demoAccounts.map(acc => (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(acc.email);
+                      setPassword('NitechSpark#2026');
+                      setError(null);
+                    }}
+                    className={`text-[9px] font-black px-2.5 py-1 rounded-full border transition-all uppercase tracking-wider ${email.toLowerCase() === acc.email.toLowerCase() ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/30' : 'bg-white/5 text-slate-400 border-white/10 hover:text-white hover:bg-white/10'}`}
+                  >
+                    {acc.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1 text-center animate-in fade-in duration-1000 delay-300">
               <h2 className="text-lg font-bold text-white/90">{step === 1 ? 'Portal Access' : 'Two-Factor Authentication'}</h2>
               <p className="text-white/40 text-xs font-medium italic">
@@ -111,7 +166,13 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
                   <div className="space-y-2 group">
                     <div className="flex justify-between items-center pl-1">
                       <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Security Key</label>
-                      <button type="button" className="text-[9px] text-blue-400/60 hover:text-blue-400 transition-colors font-black uppercase tracking-widest">Recovery?</button>
+                      <button
+                        type="button"
+                        onClick={() => { setResetEmail(email || 'hr@nitechspark.in'); setIsResetModalOpen(true); }}
+                        className="text-[9px] text-blue-400 hover:text-blue-300 transition-colors font-black uppercase tracking-widest underline"
+                      >
+                        Reset Password?
+                      </button>
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-400 transition-colors" size={18} />
@@ -196,6 +257,62 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
           </div>
         </div>
       </div>
+
+      {/* Reset Password Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-slate-900 border border-white/10 w-full max-w-md rounded-[32px] p-8 shadow-2xl space-y-6 relative animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-xl font-black text-white uppercase tracking-wider">Reset Security Key</h3>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">Instant password recovery for demo accounts</p>
+              </div>
+              <button onClick={() => setIsResetModalOpen(false)} className="text-slate-500 hover:text-white bg-white/5 p-2 rounded-xl">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleResetSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Email</label>
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={e => setResetEmail(e.target.value)}
+                  placeholder="hr@nitechspark.in"
+                  className="w-full bg-slate-950 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white font-medium outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Security Key</label>
+                <input
+                  type="text"
+                  required
+                  value={resetPassword}
+                  onChange={e => setResetPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white font-medium outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {resetMessage && (
+                <div className={`p-3 rounded-xl text-xs font-bold text-center ${resetMessage.includes('successfully') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                  {resetMessage}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-500/20"
+              >
+                {isLoading ? 'Resetting...' : 'Update & Log In'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

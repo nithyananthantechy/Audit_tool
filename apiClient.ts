@@ -64,6 +64,13 @@ export const api = {
     return result;
   },
 
+  resetPassword: async (email: string, newPassword: string) => {
+    return fetchJSON(`${API_Base}/auth/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ email, newPassword })
+    });
+  },
+
   setupMfa: async () => {
     return fetchJSON(`${API_Base}/mfa/setup`, { method: 'POST' });
   },
