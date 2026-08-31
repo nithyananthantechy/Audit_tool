@@ -21,7 +21,7 @@ export const SparkAuditBrandLogo: React.FC<{
         src={NITECHSPARK_LOGO}
         alt="SparkAudit Logo"
         style={width ? { width: typeof width === 'number' ? `${width}px` : width, height: 'auto' } : undefined}
-        className="w-[175px] sm:w-[210px] md:w-[240px] h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+        className="w-[240px] sm:w-[300px] md:w-[350px] lg:w-[380px] h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
       />
       {showSubtitle && (
         <span className="text-[9px] font-black text-cyan-400/90 uppercase tracking-[0.25em] mt-0.5 pl-1">
@@ -39,7 +39,7 @@ export const SparkAuditBrandLogo: React.FC<{
 export const SparkAuditIcon: React.FC<{
   className?: string;
   width?: number | string;
-}> = ({ className = '', width = 240 }) => {
+}> = ({ className = '', width = 300 }) => {
   const widthStyle = typeof width === 'number' ? `${width}px` : width;
 
   return (
@@ -50,7 +50,7 @@ export const SparkAuditIcon: React.FC<{
         src={NITECHSPARK_LOGO}
         alt="SparkAudit"
         style={{ width: widthStyle, height: 'auto' }}
-        className="relative z-10 w-[200px] sm:w-[230px] md:w-[250px] h-auto object-contain transition-transform duration-500 group-hover:scale-[1.02]"
+        className="relative z-10 w-[240px] sm:w-[280px] md:w-[320px] h-auto object-contain transition-transform duration-500 group-hover:scale-[1.02]"
       />
     </div>
   );

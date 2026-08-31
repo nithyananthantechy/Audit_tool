@@ -95,7 +95,7 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
 
           {/* 1. Logo & Tagline Header */}
           <div className="flex flex-col items-center justify-center text-center space-y-2 pt-2">
-            <SparkAuditIcon width={240} />
+            <SparkAuditIcon width={300} />
             <p className="text-[10px] font-black text-cyan-400/90 uppercase tracking-[0.22em] max-w-[360px] leading-tight">
               {COMPANY_TAGLINE}
             </p>
