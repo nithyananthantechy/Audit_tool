@@ -57,7 +57,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 sm:h-20 flex items-center justify-between">
           {/* Logo on Left (150-185px wide, auto height) */}
-          <div className="flex items-center">
+          <div className="flex items-center pl-1 sm:pl-3">
             <SparkAuditBrandLogo />
           </div>
 
