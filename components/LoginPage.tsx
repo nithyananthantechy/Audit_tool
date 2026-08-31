@@ -95,20 +95,15 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
         <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/[0.08] rounded-[40px] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
 
           {/* Header Section */}
-          <div className="p-10 text-center relative overflow-hidden">
+          <div className="p-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-blue-500/8 via-indigo-500/5 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
-            <div className="relative z-10 space-y-5">
+            <div className="relative z-10 flex flex-col items-center justify-center space-y-2">
               <div className="flex justify-center animate-in slide-in-from-top-4 duration-500">
-                <SparkAuditIcon size={76} />
+                <SparkAuditIcon size={140} />
               </div>
-              <div className="space-y-1">
-                <h1 className="text-[28px] font-black text-white tracking-[0.12em] uppercase">
-                  Spark<span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Audit</span>
-                </h1>
-                <p className="text-blue-400/80 text-[10px] font-black uppercase tracking-[0.35em]">{COMPANY_TAGLINE}</p>
-              </div>
+              <p className="text-blue-400/80 text-[10px] font-black uppercase tracking-[0.35em] -mt-3">{COMPANY_TAGLINE}</p>
             </div>
           </div>
 

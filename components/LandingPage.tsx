@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { SparkAuditBrandLogo } from '../constants';
+import { SparkAuditBrandLogo, NITECHSPARK_LOGO } from '../constants';
 import {
   ShieldCheck,
   ArrowRight,

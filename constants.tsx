@@ -7,167 +7,45 @@ export const COMPANY_TAGLINE = "Empowering Compliance Through Digital Excellence
 export const NITECHSPARK_LOGO = "/logo.png";
 
 /* ─────────────────────────────────────────────
-   SparkAuditBrandLogo — full horizontal lockup
+   SparkAuditBrandLogo — uses the Canva PNG logo
+   Horizontal lockup: image + optional tagline text
    ───────────────────────────────────────────── */
 export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubtitle?: boolean }> = ({
   size = 'md',
-  showSubtitle = true,
+  showSubtitle = false,
 }) => {
-  const iconSizes = { sm: 34, md: 44, lg: 60 };
-  const s = iconSizes[size];
-  const uid = `sab-${size}`;
+  const heights = { sm: 'h-12', md: 'h-16', lg: 'h-24' };
 
   return (
-    <div className="flex items-center gap-3 select-none group cursor-default">
-      {/* ── Icon mark ── */}
-      <div className="relative flex-shrink-0">
-        {/* outer glow halo */}
-        <div className="absolute inset-0 scale-125 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-400 to-indigo-600 opacity-25 blur-xl group-hover:opacity-50 transition-all duration-700" />
-        <svg
-          width={s} height={s}
-          viewBox="0 0 56 56"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
-        >
-          <defs>
-            {/* shield face gradient */}
-            <linearGradient id={`${uid}-g1`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#1e40af" />
-              <stop offset="40%" stopColor="#0ea5e9" />
-              <stop offset="100%" stopColor="#4f46e5" />
-            </linearGradient>
-            {/* stroke gradient */}
-            <linearGradient id={`${uid}-g2`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#818cf8" />
-            </linearGradient>
-            {/* lightning bolt gradient */}
-            <linearGradient id={`${uid}-g3`} x1="28" y1="12" x2="28" y2="44" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="100%" stopColor="#7dd3fc" />
-            </linearGradient>
-            <filter id={`${uid}-glow`}>
-              <feGaussianBlur stdDeviation="1.5" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
-
-          {/* Angular shield body */}
-          <path
-            d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
-            fill={`url(#${uid}-g1)`}
-            fillOpacity="0.9"
-          />
-          {/* Shield border rim */}
-          <path
-            d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
-            fill="none"
-            stroke={`url(#${uid}-g2)`}
-            strokeWidth="1.6"
-          />
-          {/* Inner shield highlight top edge */}
-          <path
-            d="M28 8 L44 15.5 L44 30"
-            fill="none"
-            stroke="rgba(255,255,255,0.18)"
-            strokeWidth="1"
-            strokeLinecap="round"
-          />
-
-          {/* Lightning bolt — centre motif */}
-          <path
-            d="M32 13 L22 29 H29 L24 43 L37 25 H30 Z"
-            fill={`url(#${uid}-g3)`}
-            filter={`url(#${uid}-glow)`}
-          />
-        </svg>
-      </div>
-
-      {/* ── Wordmark ── */}
-      <div className="flex flex-col leading-none">
-        <span
-          className={`font-black tracking-tight text-white flex items-baseline gap-0 ${
-            size === 'sm' ? 'text-[18px]' : size === 'lg' ? 'text-[30px]' : 'text-[22px]'
-          }`}
-        >
-          Spark
-          <span className="bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">
-            Audit
-          </span>
+    <div className="flex flex-col items-start select-none group">
+      <img
+        src={NITECHSPARK_LOGO}
+        alt="SparkAudit Logo"
+        className={`${heights[size]} w-auto object-contain mix-blend-screen transition-transform duration-300 group-hover:scale-105`}
+      />
+      {showSubtitle && (
+        <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.25em] -mt-2 pl-2">
+          Enterprise GRC Platform
         </span>
-        {showSubtitle && (
-          <span
-            className={`font-bold text-slate-400 uppercase tracking-[0.22em] ${
-              size === 'sm' ? 'text-[7px] mt-0.5' : size === 'lg' ? 'text-[10px] mt-1' : 'text-[8px] mt-0.5'
-            }`}
-          >
-            Enterprise GRC Platform
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
 /* ─────────────────────────────────────────────
-   SparkAuditIcon — icon only (for login page header etc)
+   SparkAuditIcon — icon/logo for login page
    ───────────────────────────────────────────── */
-export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 72 }) => {
-  const uid = `sai-${size}`;
+export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 120 }) => {
   return (
     <div className="relative inline-flex items-center justify-center group">
-      {/* halo */}
-      <div className="absolute inset-0 scale-150 bg-gradient-to-br from-blue-600 via-cyan-400 to-indigo-600 opacity-20 blur-2xl rounded-full group-hover:opacity-40 transition-all duration-700" />
-      <svg
-        width={size} height={size}
-        viewBox="0 0 56 56"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="relative z-10 drop-shadow-[0_0_18px_rgba(56,189,248,0.45)] transition-transform duration-500 group-hover:scale-105"
-      >
-        <defs>
-          <linearGradient id={`${uid}-g1`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#1e3a8a" />
-            <stop offset="45%" stopColor="#0284c7" />
-            <stop offset="100%" stopColor="#4338ca" />
-          </linearGradient>
-          <linearGradient id={`${uid}-g2`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#7dd3fc" />
-            <stop offset="100%" stopColor="#a5b4fc" />
-          </linearGradient>
-          <linearGradient id={`${uid}-g3`} x1="28" y1="12" x2="28" y2="44" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor="#bae6fd" />
-          </linearGradient>
-          <filter id={`${uid}-glow`}>
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-        <path
-          d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
-          fill={`url(#${uid}-g1)`}
-        />
-        <path
-          d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
-          fill="none"
-          stroke={`url(#${uid}-g2)`}
-          strokeWidth="1.8"
-        />
-        <path
-          d="M28 8 L44 15.5 L44 30"
-          fill="none"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="1"
-          strokeLinecap="round"
-        />
-        <path
-          d="M32 13 L22 29 H29 L24 43 L37 25 H30 Z"
-          fill={`url(#${uid}-g3)`}
-          filter={`url(#${uid}-glow)`}
-        />
-      </svg>
+      {/* ambient glow behind the logo */}
+      <div className="absolute inset-0 scale-125 bg-blue-600/15 blur-2xl rounded-full group-hover:bg-blue-500/25 transition-all duration-700" />
+      <img
+        src={NITECHSPARK_LOGO}
+        alt="SparkAudit"
+        style={{ height: size, width: 'auto' }}
+        className="relative z-10 object-contain mix-blend-screen transition-transform duration-500 group-hover:scale-105"
+      />
     </div>
   );
 };
