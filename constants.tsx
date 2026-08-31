@@ -14,14 +14,14 @@ export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubt
   size = 'md',
   showSubtitle = false,
 }) => {
-  const heights = { sm: 'h-10', md: 'h-14', lg: 'h-20' };
+  const heights = { sm: 'h-12 md:h-14', md: 'h-14 md:h-16', lg: 'h-20' };
 
   return (
     <div className="flex flex-col items-start select-none group">
       <img
         src={NITECHSPARK_LOGO}
         alt="SparkAudit Logo"
-        className={`${heights[size]} w-auto object-contain mix-blend-screen drop-shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-transform duration-300 group-hover:scale-105`}
+        className={`${heights[size]} w-auto object-contain mix-blend-screen transition-transform duration-300 group-hover:scale-105`}
       />
       {showSubtitle && (
         <span className="text-[9px] font-black text-cyan-400/80 uppercase tracking-[0.25em] -mt-1 pl-1">
@@ -35,7 +35,7 @@ export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubt
 /* ─────────────────────────────────────────────
    SparkAuditIcon — icon/logo for login page
    ───────────────────────────────────────────── */
-export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 110 }) => {
+export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 120 }) => {
   return (
     <div className="relative inline-flex items-center justify-center group">
       {/* ambient glow behind the logo */}
