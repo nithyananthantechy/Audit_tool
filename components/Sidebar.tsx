@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, department, activeTab, setActiv
     <div className="w-64 bg-slate-950/40 backdrop-blur-xl border-r border-white/5 text-white flex flex-col sticky top-0 h-screen z-50">
       <div className="p-6 flex flex-col gap-2 border-b border-white/5 bg-gradient-to-b from-blue-900/10 via-transparent to-transparent">
         <div className="flex items-center justify-start animate-in fade-in duration-700">
-          <SparkAuditBrandLogo size="md" showSubtitle={true} />
+          <SparkAuditBrandLogo width={160} />
         </div>
       </div>
 
