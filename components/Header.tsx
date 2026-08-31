@@ -4,7 +4,7 @@ import { COMPANY_NAME, APP_NAME } from '../constants';
 import { api } from '../apiClient';
 import {
   Bell, Search, X, CheckCircle, AlertTriangle, Info, Camera, Save, Lock,
-  ChevronDown, User as UserIcon, Key, LogOut
+  ChevronDown, User as UserIcon, Key, LogOut, Building2
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -128,6 +128,7 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
   };
 
   const isLicenseExpiring = user.organization?.isExpiringSoon || (user.organization?.daysRemaining !== undefined && user.organization.daysRemaining <= 10);
+  const orgDisplayName = user.organization?.name || (user.organizationId === 'org-e10d44fdcedb' ? 'NSK Groups' : user.organizationId === 'org-apex' ? 'Apex Global' : 'NitechSpark Technologies');
 
   return (
     <>
@@ -137,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-slate-950 shrink-0" />
             <span>
-              <strong>⚠️ URGENT LICENSE EXPIRY NOTICE:</strong> Your organization ({user.organization?.name || 'Client'}) subscription expires in <strong>{user.organization?.daysRemaining ?? 'few'} days</strong> (End Date: {user.organization?.endDate ? user.organization.endDate.substring(0, 10) : 'Soon'}). Please contact <strong>NitechSpark</strong> to renew your license to avoid service suspension.
+              <strong>⚠️ URGENT LICENSE EXPIRY NOTICE:</strong> Your organization ({orgDisplayName}) subscription expires in <strong>{user.organization?.daysRemaining ?? 'few'} days</strong> (End Date: {user.organization?.endDate ? user.organization.endDate.substring(0, 10) : 'Soon'}). Please contact <strong>NitechSpark</strong> to renew your license to avoid service suspension.
             </span>
           </div>
           <span className="hidden md:inline-block px-3 py-1 bg-slate-950 text-amber-400 rounded-lg text-[10px] uppercase font-black tracking-widest">
@@ -147,13 +148,22 @@ const Header: React.FC<HeaderProps> = ({ user, onUpdateProfile, onLogout }) => {
       )}
 
       <header className="h-16 bg-slate-950/40 backdrop-blur-md border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-4 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full w-96 focus-within:bg-white/[0.06] transition-all focus-within:border-blue-500/30">
-          <Search size={18} className="text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search portal assets..."
-            className="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-slate-600"
-          />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 bg-white/[0.03] border border-white/5 px-4 py-2 rounded-full w-80 focus-within:bg-white/[0.06] transition-all focus-within:border-blue-500/30">
+            <Search size={18} className="text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search portal assets..."
+              className="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-slate-600"
+            />
+          </div>
+
+          <div className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 px-3.5 py-1.5 rounded-full shadow-inner">
+            <Building2 size={13} className="text-blue-400" />
+            <span className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">
+              Tenant Node: {orgDisplayName}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

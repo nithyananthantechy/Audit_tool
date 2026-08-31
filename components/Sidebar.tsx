@@ -17,7 +17,7 @@ import {
   Lock,
   Server
 } from 'lucide-react';
-import { NITECHSPARK_LOGO, COMPANY_NAME, APP_NAME } from '../constants';
+import { SparkAuditBrandLogo } from '../constants';
 
 interface SidebarProps {
   role: Role;
@@ -60,16 +60,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, department, activeTab, setActiv
 
   return (
     <div className="w-64 bg-slate-950/40 backdrop-blur-xl border-r border-white/5 text-white flex flex-col sticky top-0 h-screen z-50">
-      <div className="p-6 flex flex-col gap-6 border-b border-white/5 bg-white/[0.02]">
-        <div className="flex items-center justify-center animate-in fade-in duration-700">
-          <img
-            src={NITECHSPARK_LOGO}
-            alt={`${COMPANY_NAME} Logo`}
-            className="h-16 w-auto object-contain scale-125 mix-blend-screen"
-          />
-        </div>
-        <div className="text-center px-2">
-          <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] block">{APP_NAME}</span>
+      <div className="p-6 flex flex-col gap-2 border-b border-white/5 bg-gradient-to-b from-blue-900/10 via-transparent to-transparent">
+        <div className="flex items-center justify-start animate-in fade-in duration-700">
+          <SparkAuditBrandLogo size="md" showSubtitle={true} />
         </div>
       </div>
 

@@ -1723,7 +1723,13 @@ app.post('/api/auth/change-password', authMiddleware, async (req, res) => {
 app.get('/api/data', authMiddleware, async (req, res) => {
   try {
     const isGlobalRole = ['Super Admin', 'Internal Auditor', 'External Auditor'].includes(req.user.role);
-    const users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts, mfaEnabled FROM users').all();
+    let users;
+    if (req.user.role === 'Super Admin') {
+      users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts, mfaEnabled, organizationId FROM users').all();
+    } else {
+      const userOrg = req.user.organizationId || 'org-niutechspark';
+      users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts, mfaEnabled, organizationId FROM users WHERE organizationId = ? OR organizationId IS NULL', userOrg).all();
+    }
     const checklists = await db.prepare('SELECT * FROM checklists').all();
     const controls = await db.prepare('SELECT * FROM controls ORDER BY controlId ASC').all();
     const risks = await db.prepare('SELECT * FROM risks ORDER BY reviewDate ASC').all();

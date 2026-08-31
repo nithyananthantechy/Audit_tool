@@ -197,9 +197,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ capa, users, setUsers, activiti
   };
 
   const filteredUsers = users.filter(u => {
-    // Multi-tenant isolation: Org Admins only see users within their organization
-    if (!isSuperAdmin && user.organizationId) {
-      if (u.organizationId && u.organizationId !== user.organizationId) {
+    // Multi-tenant isolation: Non-Super Admins strictly only see users within their own organization
+    if (!isSuperAdmin) {
+      const userOrg = user.organizationId || 'org-niutechspark';
+      const itemOrg = u.organizationId || 'org-niutechspark';
+      if (itemOrg !== userOrg) {
         return false;
       }
     }
