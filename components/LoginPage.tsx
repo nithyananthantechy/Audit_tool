@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NITECHSPARK_LOGO, COMPANY_NAME, COMPANY_TAGLINE, APP_NAME } from '../constants';
+import { COMPANY_NAME, COMPANY_TAGLINE, APP_NAME, SparkAuditIcon } from '../constants';
 import { Lock, Mail, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert, X } from 'lucide-react';
 import { api } from '../apiClient';
 
@@ -96,25 +96,22 @@ const LoginPage: React.FC<LoginProps> = ({ onLogin, onVerifyMfa }) => {
 
           {/* Header Section */}
           <div className="p-10 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/8 via-indigo-500/5 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
-            <div className="relative z-10 space-y-6">
-              <div className="animate-in slide-in-from-top-4 duration-500">
-                <img
-                  src={NITECHSPARK_LOGO}
-                  alt={`${COMPANY_NAME} Logo`}
-                  className="h-24 w-auto object-contain block mx-auto mix-blend-screen scale-110"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200x60?text=NITECHSPARK';
-                  }}
-                />
+            <div className="relative z-10 space-y-5">
+              <div className="flex justify-center animate-in slide-in-from-top-4 duration-500">
+                <SparkAuditIcon size={76} />
               </div>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-black text-white tracking-widest uppercase">{APP_NAME}</h1>
-                <p className="text-blue-400 text-[11px] font-black uppercase tracking-[0.4em]">{COMPANY_TAGLINE}</p>
+              <div className="space-y-1">
+                <h1 className="text-[28px] font-black text-white tracking-[0.12em] uppercase">
+                  Spark<span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Audit</span>
+                </h1>
+                <p className="text-blue-400/80 text-[10px] font-black uppercase tracking-[0.35em]">{COMPANY_TAGLINE}</p>
               </div>
             </div>
           </div>
+
 
           <div className="px-10 pb-12 space-y-6">
             {/* Quick Login Chips for Demo Ease */}

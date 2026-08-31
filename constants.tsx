@@ -6,50 +6,168 @@ export const COMPANY_NAME = "NitechSpark";
 export const COMPANY_TAGLINE = "Empowering Compliance Through Digital Excellence";
 export const NITECHSPARK_LOGO = "/logo.png";
 
-export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubtitle?: boolean }> = ({ size = 'md', showSubtitle = true }) => {
-  const iconSizes = { sm: 32, md: 42, lg: 56 };
+/* ─────────────────────────────────────────────
+   SparkAuditBrandLogo — full horizontal lockup
+   ───────────────────────────────────────────── */
+export const SparkAuditBrandLogo: React.FC<{ size?: 'sm' | 'md' | 'lg'; showSubtitle?: boolean }> = ({
+  size = 'md',
+  showSubtitle = true,
+}) => {
+  const iconSizes = { sm: 34, md: 44, lg: 60 };
   const s = iconSizes[size];
+  const uid = `sab-${size}`;
 
   return (
-    <div className="flex items-center gap-3 select-none group">
-      <div className="relative flex items-center justify-center">
-        {/* Ambient Glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-600 rounded-2xl blur-lg opacity-40 group-hover:opacity-70 transition-all duration-500"></div>
-        <svg width={s} height={s} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 drop-shadow-xl transition-transform duration-500 group-hover:scale-105">
+    <div className="flex items-center gap-3 select-none group cursor-default">
+      {/* ── Icon mark ── */}
+      <div className="relative flex-shrink-0">
+        {/* outer glow halo */}
+        <div className="absolute inset-0 scale-125 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-400 to-indigo-600 opacity-25 blur-xl group-hover:opacity-50 transition-all duration-700" />
+        <svg
+          width={s} height={s}
+          viewBox="0 0 56 56"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
+        >
           <defs>
-            <linearGradient id="sparkGradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" />
-              <stop offset="50%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#6366f1" />
+            {/* shield face gradient */}
+            <linearGradient id={`${uid}-g1`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#1e40af" />
+              <stop offset="40%" stopColor="#0ea5e9" />
+              <stop offset="100%" stopColor="#4f46e5" />
             </linearGradient>
-            <linearGradient id="sparkGradAccent" x1="100%" y1="0%" x2="0%" y2="100%">
+            {/* stroke gradient */}
+            <linearGradient id={`${uid}-g2`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#38bdf8" />
               <stop offset="100%" stopColor="#818cf8" />
             </linearGradient>
+            {/* lightning bolt gradient */}
+            <linearGradient id={`${uid}-g3`} x1="28" y1="12" x2="28" y2="44" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#7dd3fc" />
+            </linearGradient>
+            <filter id={`${uid}-glow`}>
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
           </defs>
 
-          {/* Shield Outer Frame */}
-          <path d="M32 4L54 14V30C54 44.4 44.6 57.5 32 60C19.4 57.5 10 44.4 10 30V14L32 4Z" fill="url(#sparkGradPrimary)" fillOpacity="0.25" stroke="url(#sparkGradPrimary)" strokeWidth="2.5" strokeLinejoin="round" />
-          
-          {/* Inner Compliance Core Shield */}
-          <path d="M32 10L48 18V30C48 40.5 41.2 50.1 32 52.5C22.8 50.1 16 40.5 16 30V18L32 10Z" fill="url(#sparkGradPrimary)" fillOpacity="0.85" />
-          
-          {/* Central Spark & Checkmark Motif */}
-          <path d="M25 31L30 36L41 23" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M32 16V20M32 42V46M20 32H24M40 32H44" stroke="url(#sparkGradAccent)" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+          {/* Angular shield body */}
+          <path
+            d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
+            fill={`url(#${uid}-g1)`}
+            fillOpacity="0.9"
+          />
+          {/* Shield border rim */}
+          <path
+            d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
+            fill="none"
+            stroke={`url(#${uid}-g2)`}
+            strokeWidth="1.6"
+          />
+          {/* Inner shield highlight top edge */}
+          <path
+            d="M28 8 L44 15.5 L44 30"
+            fill="none"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="1"
+            strokeLinecap="round"
+          />
+
+          {/* Lightning bolt — centre motif */}
+          <path
+            d="M32 13 L22 29 H29 L24 43 L37 25 H30 Z"
+            fill={`url(#${uid}-g3)`}
+            filter={`url(#${uid}-glow)`}
+          />
         </svg>
       </div>
 
-      <div className="flex flex-col">
-        <span className={`font-black tracking-tight text-white uppercase flex items-center gap-1 ${size === 'sm' ? 'text-lg' : size === 'lg' ? 'text-3xl' : 'text-2xl'}`}>
-          SPARK<span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent font-extrabold">AUDIT</span>
+      {/* ── Wordmark ── */}
+      <div className="flex flex-col leading-none">
+        <span
+          className={`font-black tracking-tight text-white flex items-baseline gap-0 ${
+            size === 'sm' ? 'text-[18px]' : size === 'lg' ? 'text-[30px]' : 'text-[22px]'
+          }`}
+        >
+          Spark
+          <span className="bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-transparent">
+            Audit
+          </span>
         </span>
         {showSubtitle && (
-          <span className="text-[9px] font-black text-cyan-400/80 uppercase tracking-[0.3em] -mt-1">
+          <span
+            className={`font-bold text-slate-400 uppercase tracking-[0.22em] ${
+              size === 'sm' ? 'text-[7px] mt-0.5' : size === 'lg' ? 'text-[10px] mt-1' : 'text-[8px] mt-0.5'
+            }`}
+          >
             Enterprise GRC Platform
           </span>
         )}
       </div>
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────────
+   SparkAuditIcon — icon only (for login page header etc)
+   ───────────────────────────────────────────── */
+export const SparkAuditIcon: React.FC<{ size?: number }> = ({ size = 72 }) => {
+  const uid = `sai-${size}`;
+  return (
+    <div className="relative inline-flex items-center justify-center group">
+      {/* halo */}
+      <div className="absolute inset-0 scale-150 bg-gradient-to-br from-blue-600 via-cyan-400 to-indigo-600 opacity-20 blur-2xl rounded-full group-hover:opacity-40 transition-all duration-700" />
+      <svg
+        width={size} height={size}
+        viewBox="0 0 56 56"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="relative z-10 drop-shadow-[0_0_18px_rgba(56,189,248,0.45)] transition-transform duration-500 group-hover:scale-105"
+      >
+        <defs>
+          <linearGradient id={`${uid}-g1`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#1e3a8a" />
+            <stop offset="45%" stopColor="#0284c7" />
+            <stop offset="100%" stopColor="#4338ca" />
+          </linearGradient>
+          <linearGradient id={`${uid}-g2`} x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#7dd3fc" />
+            <stop offset="100%" stopColor="#a5b4fc" />
+          </linearGradient>
+          <linearGradient id={`${uid}-g3`} x1="28" y1="12" x2="28" y2="44" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#bae6fd" />
+          </linearGradient>
+          <filter id={`${uid}-glow`}>
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <path
+          d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
+          fill={`url(#${uid}-g1)`}
+        />
+        <path
+          d="M28 3 L50 12 L50 30 C50 41.5 40.5 51.5 28 54 C15.5 51.5 6 41.5 6 30 L6 12 Z"
+          fill="none"
+          stroke={`url(#${uid}-g2)`}
+          strokeWidth="1.8"
+        />
+        <path
+          d="M28 8 L44 15.5 L44 30"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
+        <path
+          d="M32 13 L22 29 H29 L24 43 L37 25 H30 Z"
+          fill={`url(#${uid}-g3)`}
+          filter={`url(#${uid}-glow)`}
+        />
+      </svg>
     </div>
   );
 };
