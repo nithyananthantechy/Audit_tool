@@ -7,24 +7,28 @@ export const COMPANY_TAGLINE = "EMPOWERING COMPLIANCE THROUGH DIGITAL EXCELLENCE
 export const NITECHSPARK_LOGO = "/logo.png";
 
 /* ─────────────────────────────────────────────
-   SparkAuditBrandLogo — Header & Navigation Logo
-   Aspect ratio ~1.43:1 (1024x715 transparent PNG)
+   SparkAuditBrandLogo
+   Used in: Navbar, Footer
+   Size: ~160px desktop / 130px mobile (via CSS)
+   NO blend modes — logo must be fully visible
    ───────────────────────────────────────────── */
 export const SparkAuditBrandLogo: React.FC<{
   className?: string;
-  width?: number | string;
+  size?: 'nav' | 'footer';
   showSubtitle?: boolean;
-}> = ({ className = '', width, showSubtitle = false }) => {
+}> = ({ className = '', size = 'nav', showSubtitle = false }) => {
   return (
-    <div className={`flex flex-col items-start select-none group cursor-pointer ${className}`}>
-      <img
-        src={NITECHSPARK_LOGO}
-        alt="SparkAudit Logo"
-        style={width ? { width: typeof width === 'number' ? `${width}px` : width, height: 'auto' } : undefined}
-        className="w-[200px] sm:w-[250px] md:w-[280px] max-h-16 sm:max-h-[76px] h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-      />
+    <div className={`inline-flex flex-col items-start select-none ${className}`}>
+      <div className="sa-logo-backing">
+        <img
+          src={NITECHSPARK_LOGO}
+          alt="SparkAudit — Enterprise GRC Platform"
+          className={size === 'footer' ? 'sa-logo-footer' : 'sa-logo-nav'}
+          draggable={false}
+        />
+      </div>
       {showSubtitle && (
-        <span className="text-[9px] font-black text-cyan-400/90 uppercase tracking-[0.25em] mt-0.5 pl-1">
+        <span className="text-[9px] font-semibold text-blue-400/80 uppercase tracking-[0.22em] mt-1 pl-2">
           Enterprise GRC Platform
         </span>
       )}
@@ -33,25 +37,24 @@ export const SparkAuditBrandLogo: React.FC<{
 };
 
 /* ─────────────────────────────────────────────
-   SparkAuditIcon — Login Page Logo
-   Aspect ratio ~1.43:1 (1024x715 transparent PNG)
+   SparkAuditIcon
+   Used in: Login/Auth page header
+   Size: ~200px desktop / 160px mobile (via CSS)
+   NO blend modes — logo must be fully visible
    ───────────────────────────────────────────── */
 export const SparkAuditIcon: React.FC<{
   className?: string;
-  width?: number | string;
-}> = ({ className = '', width = 300 }) => {
-  const widthStyle = typeof width === 'number' ? `${width}px` : width;
-
+}> = ({ className = '' }) => {
   return (
-    <div className={`relative inline-flex items-center justify-center select-none group ${className}`}>
-      {/* Subtle background glow */}
-      <div className="absolute inset-0 bg-cyan-500/15 blur-2xl rounded-full group-hover:opacity-100 transition-all duration-700 pointer-events-none" />
-      <img
-        src={NITECHSPARK_LOGO}
-        alt="SparkAudit"
-        style={{ width: widthStyle, height: 'auto' }}
-        className="relative z-10 w-[240px] sm:w-[280px] md:w-[320px] h-auto object-contain transition-transform duration-500 group-hover:scale-[1.02]"
-      />
+    <div className={`inline-flex items-center justify-center select-none ${className}`}>
+      <div className="sa-logo-backing">
+        <img
+          src={NITECHSPARK_LOGO}
+          alt="SparkAudit"
+          className="sa-logo-auth"
+          draggable={false}
+        />
+      </div>
     </div>
   );
 };

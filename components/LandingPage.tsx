@@ -6,14 +6,14 @@ import {
   BarChart3,
   Lock,
   Zap,
-  CheckCircle2,
   FileText,
   Users,
   Globe,
-  ChevronRight,
   Activity,
   Building2,
   Award,
+  ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -21,22 +21,41 @@ interface LandingPageProps {
 }
 
 /* ── Animated counter hook ── */
-function useCounter(target: number, duration = 1500) {
+function useCounter(target: number, duration = 1600) {
   const [count, setCount] = useState(0);
   const rafRef = useRef<number | undefined>(undefined);
+  const [started, setStarted] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setStarted(true); },
+      { threshold: 0.3 }
+    );
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
     const start = performance.now();
     const step = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
-      setCount(Math.floor(progress * target));
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(ease * target));
       if (progress < 1) rafRef.current = requestAnimationFrame(step);
+      else setCount(target);
     };
     rafRef.current = requestAnimationFrame(step);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [target, duration]);
-  return count;
+  }, [started, target, duration]);
+
+  return { count, containerRef };
 }
 
+/* ═══════════════════════════════════════════════════════
+   LANDING PAGE
+   ═══════════════════════════════════════════════════════ */
 const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
   const [scrolled, setScrolled] = useState(false);
 
@@ -47,272 +66,516 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#030712] font-sans text-white selection:bg-cyan-500/20 overflow-x-hidden">
+    <div
+      className="min-h-screen text-white overflow-x-hidden"
+      style={{ background: 'var(--sa-bg)', fontFamily: "'Inter', sans-serif" }}
+    >
 
-      {/* ══ NAVIGATION HEADER ══ */}
-      <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${
-        scrolled
-          ? 'bg-slate-950/90 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl shadow-black/50'
-          : 'bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent border-b border-white/[0.04]'
-      }`}>
-        <div className="w-full px-4 sm:px-6 md:px-10 h-20 sm:h-24 flex items-center justify-between">
-          {/* Logo on Far Left End */}
+      {/* ══ NAVIGATION ══ */}
+      <header
+        className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${
+          scrolled
+            ? 'sa-glass-strong border-b'
+            : 'border-b border-transparent'
+        }`}
+        style={{ borderColor: scrolled ? 'var(--sa-border)' : 'transparent' }}
+      >
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 md:px-12 h-[72px] flex items-center justify-between">
+
+          {/* Logo */}
           <div className="flex items-center">
-            <SparkAuditBrandLogo />
+            <SparkAuditBrandLogo size="nav" />
           </div>
 
-          {/* Right Header Status & Portal Login */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse inline-block" />
+          {/* Right controls */}
+          <div className="flex items-center gap-3">
+            {/* System status — desktop only */}
+            <div className="hidden sm:flex sa-status-online">
+              <span className="sa-pulse-dot" />
               System Online
             </div>
+
+            {/* Portal Login CTA */}
             <button
+              id="nav-portal-login"
               onClick={onLoginClick}
-              className="flex items-center gap-2 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full text-xs sm:text-sm font-bold hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 shrink-0"
+              aria-label="Access SparkAudit Portal"
+              className="sa-btn-primary"
+              style={{ height: 42, padding: '0 22px', fontSize: 13 }}
             >
-              Portal Login <ChevronRight size={14} />
+              Portal Login
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* ══ HERO SECTION ══ */}
-      <section className="relative min-h-[calc(100vh-96px)] flex items-center pt-32 sm:pt-40 pb-12 sm:pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
-
-        {/* Ambient mesh background */}
-        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[550px] h-[550px] bg-blue-600/10 blur-[130px] rounded-full" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[480px] h-[480px] bg-indigo-700/12 blur-[130px] rounded-full" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-cyan-900/8 blur-[160px] rounded-full" />
-          {/* Subtle Grid */}
-          <svg className="absolute inset-0 w-full h-full opacity-[0.02]" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="hero-grid" width="48" height="48" patternUnits="userSpaceOnUse">
-                <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hero-grid)" />
-          </svg>
+      {/* ══ HERO ══ */}
+      <section
+        className="relative min-h-screen flex items-center sa-grid-bg overflow-hidden"
+        style={{ paddingTop: 72 }}
+      >
+        {/* Ambient orbs */}
+        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
+          <div
+            className="absolute rounded-full"
+            style={{
+              top: '-8%', left: '-6%',
+              width: 600, height: 600,
+              background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)',
+              filter: 'blur(60px)',
+            }}
+          />
+          <div
+            className="absolute rounded-full"
+            style={{
+              bottom: '-8%', right: '-4%',
+              width: 520, height: 520,
+              background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, transparent 70%)',
+              filter: 'blur(60px)',
+            }}
+          />
+          <div
+            className="absolute rounded-full"
+            style={{
+              top: '40%', left: '50%',
+              width: 700, height: 300,
+              transform: 'translate(-50%, -50%)',
+              background: 'radial-gradient(ellipse, rgba(6,182,212,0.05) 0%, transparent 70%)',
+              filter: 'blur(80px)',
+            }}
+          />
         </div>
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center w-full">
+        <div className="relative z-10 max-w-[1400px] mx-auto px-5 sm:px-8 md:px-12 w-full py-20 sm:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
 
-          {/* ── Left Hero Copy (7 cols on lg) ── */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-7 animate-in fade-in slide-in-from-left-6 duration-700">
-            {/* Version Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
-              <Award size={12} className="text-cyan-400" />
-              <span className="text-[10px] font-black text-blue-300 uppercase tracking-[0.2em]">Enterprise Compliance Platform</span>
-              <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-              <span className="text-[10px] font-black text-cyan-300/70 uppercase tracking-[0.2em]">v2.5</span>
-            </div>
+            {/* Left copy */}
+            <div className="lg:col-span-7 space-y-7 sa-anim-up">
 
-            {/* Main Heading — Controlled Clamp Sizing */}
-            <div className="space-y-3">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.6rem] font-black leading-[1.1] tracking-tight">
-                <span className="text-white">NitechSpark</span>
-                <br />
-                <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                  Unified Audit
-                </span>
-                <br />
-                <span className="text-white">& Compliance Hub</span>
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg text-slate-400 max-w-xl leading-relaxed">
-                End-to-end GRC management — from evidence collection and auditor oversight to CAPA resolution and regulatory reporting, all in one secure platform.
-              </p>
-            </div>
+              {/* Platform badge */}
+              <div className="sa-section-tag w-fit">
+                <Award size={10} className="text-blue-300" />
+                Enterprise GRC &amp; Compliance Platform
+                <span className="sa-pulse-dot" style={{ width: 5, height: 5 }} />
+              </div>
 
-            {/* CTA & Department Indicator Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-              <button
-                onClick={onLoginClick}
-                className="group relative overflow-hidden h-[54px] px-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm sm:text-base hover:from-blue-500 hover:to-indigo-500 transition-all shadow-xl shadow-blue-600/20 hover:shadow-blue-500/35 active:scale-[0.98] flex items-center justify-center gap-2.5 shrink-0"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <ShieldCheck size={18} />
-                Access Secure Portal
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </button>
+              {/* Heading */}
+              <div className="space-y-4">
+                <h1
+                  className="font-black leading-[1.08] tracking-tight"
+                  style={{ fontSize: 'clamp(2.2rem, 4.5vw, 3.5rem)' }}
+                >
+                  <span style={{ color: 'var(--sa-text)' }}>SparkAudit</span>
+                  <br />
+                  <span
+                    style={{
+                      background: 'linear-gradient(135deg, #60a5fa 0%, #818cf8 50%, #06b6d4 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
+                    Unified Audit
+                  </span>
+                  <br />
+                  <span style={{ color: 'var(--sa-text)' }}>&amp; Compliance Hub</span>
+                </h1>
 
-              {/* Department Avatars */}
-              <div className="flex items-center gap-3 px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-xl">
-                <div className="flex -space-x-1.5">
-                  {['S','N','A','H'].map((letter, i) => (
-                    <div
-                      key={i}
-                      className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 border-2 border-slate-950 flex items-center justify-center text-[10px] font-black text-white shadow-sm"
-                    >
-                      {letter}
-                    </div>
-                  ))}
+                <p
+                  className="max-w-[540px] leading-[1.75]"
+                  style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.05rem)', color: 'var(--sa-text-muted)' }}
+                >
+                  End-to-end GRC management — from evidence collection and auditor
+                  oversight to CAPA resolution and regulatory reporting, all in one
+                  secure platform.
+                </p>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <button
+                  id="hero-access-portal"
+                  onClick={onLoginClick}
+                  aria-label="Access SparkAudit Secure Portal"
+                  className="sa-btn-primary"
+                  style={{ height: 52, padding: '0 32px', fontSize: 15 }}
+                >
+                  <ShieldCheck size={18} />
+                  Access Secure Portal
+                  <ArrowRight size={16} />
+                </button>
+
+                {/* Social proof strip */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                  style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--sa-border)',
+                  }}
+                >
+                  <div className="flex -space-x-2">
+                    {['S', 'N', 'A', 'H'].map((letter, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-center rounded-full text-white font-bold border-2"
+                        style={{
+                          width: 28, height: 28,
+                          fontSize: 10,
+                          background: `linear-gradient(135deg, #2563EB, #4f46e5)`,
+                          borderColor: 'var(--sa-bg)',
+                        }}
+                      >
+                        {letter}
+                      </div>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--sa-text-muted)', fontWeight: 600 }}>
+                    Trusted by 4+ departments
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-slate-400">Trusted by 4+ departments</span>
+              </div>
+
+              {/* Framework pills */}
+              <div className="flex flex-wrap gap-2">
+                {['ISO 27001', 'SOC 2 Type II', 'DPDP Act 2023', 'CERT-In'].map(fw => (
+                  <span
+                    key={fw}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: 'var(--sa-text-dim)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.12em',
+                      padding: '4px 12px',
+                      background: 'rgba(255,255,255,0.025)',
+                      border: '1px solid var(--sa-border)',
+                      borderRadius: 6,
+                    }}
+                  >
+                    {fw}
+                  </span>
+                ))}
               </div>
             </div>
 
-            {/* Framework Trust Pills */}
-            <div className="flex flex-wrap gap-2 pt-2">
-              {['ISO 27001', 'SOC 2 Type II', 'DPDP Act 2023', 'CERT-In'].map(framework => (
-                <span
-                  key={framework}
-                  className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-1 bg-white/[0.03] border border-white/[0.06] rounded-lg"
-                >
-                  {framework}
-                </span>
-              ))}
+            {/* Right: Feature cards */}
+            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 sa-anim-up sa-delay-2">
+              <FeatureCard
+                icon={<ShieldCheck size={20} style={{ color: '#34d399' }} />}
+                iconBg="rgba(16,185,129,0.10)"
+                iconBorder="rgba(16,185,129,0.18)"
+                title="Evidence Upload"
+                desc="Seamlessly submit audit documentation by department with chain-of-custody tracking."
+                accentBorder="rgba(16,185,129,0.12)"
+              />
+              <FeatureCard
+                icon={<Zap size={20} style={{ color: '#38bdf8' }} />}
+                iconBg="rgba(56,189,248,0.10)"
+                iconBorder="rgba(56,189,248,0.18)"
+                title="Manager Reviews"
+                desc="Accelerated multi-level approval cycles with real-time status visibility."
+                accentBorder="rgba(56,189,248,0.12)"
+              />
+              <FeatureCard
+                icon={<BarChart3 size={20} style={{ color: '#a78bfa' }} />}
+                iconBg="rgba(167,139,250,0.10)"
+                iconBorder="rgba(167,139,250,0.18)"
+                title="Auditor Oversight"
+                desc="Comprehensive visibility for internal &amp; external auditors across all controls."
+                accentBorder="rgba(167,139,250,0.12)"
+              />
+              <FeatureCard
+                icon={<Lock size={20} style={{ color: '#fb923c' }} />}
+                iconBg="rgba(251,146,60,0.10)"
+                iconBorder="rgba(251,146,60,0.18)"
+                title="CAPA Reporting"
+                desc="Digital compliance health tracking and corrective action management."
+                accentBorder="rgba(251,146,60,0.12)"
+              />
             </div>
-          </div>
 
-          {/* ── Right Feature Cards Grid (5 cols on lg) ── */}
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in zoom-in-95 duration-700 delay-200">
-            <FeatureCard
-              icon={<ShieldCheck className="text-emerald-400" size={20} />}
-              title="EVIDENCE UPLOAD"
-              desc="Seamlessly submit audit documentation by department with chain-of-custody tracking."
-              accentColor="emerald"
-            />
-            <FeatureCard
-              icon={<Zap className="text-sky-400" size={20} />}
-              title="MANAGER REVIEWS"
-              desc="Accelerated multi-level approval cycles with real-time status visibility."
-              accentColor="sky"
-            />
-            <FeatureCard
-              icon={<BarChart3 className="text-violet-400" size={20} />}
-              title="AUDITOR OVERSIGHT"
-              desc="Comprehensive visibility for internal & external auditors across all controls."
-              accentColor="violet"
-            />
-            <FeatureCard
-              icon={<Lock className="text-orange-400" size={20} />}
-              title="CAPA REPORTING"
-              desc="Digital compliance health tracking and corrective action management."
-              accentColor="orange"
-            />
           </div>
         </div>
       </section>
 
-      {/* ══ STATS STRIP ══ */}
-      <section className="border-y border-white/[0.06] bg-white/[0.02] backdrop-blur-sm py-10 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
-          <StatItem value={100} suffix="%" label="Encrypted Data" />
-          <StatItem value={4} suffix="+" label="Active Departments" />
-          <StatItem value={99} suffix=".9%" label="Uptime SLA" />
-          <StatItem value={4} suffix="" label="Compliance Frameworks" live />
+      {/* ══ METRICS STRIP ══ */}
+      <section
+        style={{
+          borderTop: '1px solid var(--sa-border)',
+          borderBottom: '1px solid var(--sa-border)',
+          background: 'var(--sa-surface)',
+        }}
+      >
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 md:px-12 py-12 sm:py-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12">
+            <StatItem value={100} suffix="%" label="Encrypted Data" icon={<Lock size={16} />} />
+            <StatItem value={4}   suffix="+"  label="Active Departments" icon={<Building2 size={16} />} />
+            <StatItem value={99}  suffix=".9%" label="Uptime SLA" icon={<TrendingUp size={16} />} live />
+            <StatItem value={4}   suffix=""   label="Compliance Frameworks" icon={<Award size={16} />} />
+          </div>
         </div>
       </section>
 
-      {/* ══ MODULES ROW ══ */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
-        <div className="text-center mb-12 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-black text-blue-300 uppercase tracking-[0.25em]">
-            <Activity size={10} className="text-cyan-400" /> Platform Modules
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight">
-            Everything in one<br />
-            <span className="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">
-              unified workspace
-            </span>
-          </h2>
-        </div>
+      {/* ══ PLATFORM MODULES ══ */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 md:px-12">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {[
-            { icon: <FileText size={18} />, title: 'Audit Manager', desc: 'Create, scope, and track end-to-end audit engagements with traceability.', color: 'blue' },
-            { icon: <Users size={18} />, title: 'Team Administration', desc: 'Multi-tenant org hierarchy, role-based access control, MFA enforcement.', color: 'violet' },
-            { icon: <Globe size={18} />, title: 'Framework Library', desc: 'CERT-In, DPDP Act 2023, ISO 27001, SOC 2 Type II built-in control libraries.', color: 'cyan' },
-            { icon: <Activity size={18} />, title: 'Risk & Governance', desc: 'Risk register, scoring matrix, and control effectiveness dashboards.', color: 'emerald' },
-            { icon: <Building2 size={18} />, title: 'Organization Hub', desc: 'Manage client tenants, license subscriptions, and billing from a single pane.', color: 'indigo' },
-            { icon: <Award size={18} />, title: 'Report Generator', desc: 'One-click compliance reports with executive summaries and finding heatmaps.', color: 'orange' },
-          ].map(m => <ModuleCard key={m.title} {...m} />)}
+          {/* Section header */}
+          <div className="text-center mb-14 space-y-4">
+            <div className="sa-section-tag mx-auto w-fit">
+              <Activity size={10} />
+              Platform Modules
+            </div>
+            <h2
+              className="font-black tracking-tight"
+              style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.75rem)', lineHeight: 1.12 }}
+            >
+              Everything in one{' '}
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #60a5fa, #818cf8)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                unified workspace
+              </span>
+            </h2>
+            <p
+              className="max-w-xl mx-auto"
+              style={{ fontSize: 15, color: 'var(--sa-text-muted)', lineHeight: 1.7 }}
+            >
+              Six purpose-built modules covering every layer of your GRC programme,
+              from risk registers to one-click compliance reports.
+            </p>
+          </div>
+
+          {/* Module grid: 3 cols desktop, 2 tablet, 1 mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              {
+                icon: <FileText size={18} />,
+                title: 'Audit Manager',
+                desc: 'Create, scope, and track end-to-end audit engagements with full traceability.',
+                accent: '#2563EB',
+              },
+              {
+                icon: <Users size={18} />,
+                title: 'Team Administration',
+                desc: 'Multi-tenant org hierarchy, role-based access control, and MFA enforcement.',
+                accent: '#7c3aed',
+              },
+              {
+                icon: <Globe size={18} />,
+                title: 'Framework Library',
+                desc: 'CERT-In, DPDP Act 2023, ISO 27001, SOC 2 Type II built-in control libraries.',
+                accent: '#0891b2',
+              },
+              {
+                icon: <Activity size={18} />,
+                title: 'Risk & Governance',
+                desc: 'Risk register, scoring matrix, and control effectiveness dashboards.',
+                accent: '#059669',
+              },
+              {
+                icon: <Building2 size={18} />,
+                title: 'Organization Hub',
+                desc: 'Manage client tenants, license subscriptions, and billing from a single pane.',
+                accent: '#4f46e5',
+              },
+              {
+                icon: <Award size={18} />,
+                title: 'Report Generator',
+                desc: 'One-click compliance reports with executive summaries and finding heatmaps.',
+                accent: '#d97706',
+              },
+            ].map((m, i) => (
+              <ModuleCard key={m.title} {...m} delay={i * 60} />
+            ))}
+          </div>
+
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer className="border-t border-white/[0.06] py-10 sm:py-12 px-4 sm:px-6 md:px-12 bg-slate-950">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <SparkAuditBrandLogo />
-          <div className="flex flex-col items-center md:items-end gap-2">
-            <div className="flex gap-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              <button className="hover:text-blue-400 transition-colors">Privacy Policy</button>
-              <button className="hover:text-blue-400 transition-colors">Terms of Access</button>
-              <button className="hover:text-blue-400 transition-colors">Contact</button>
+      <footer
+        style={{
+          borderTop: '1px solid var(--sa-border)',
+          background: 'var(--sa-surface)',
+        }}
+      >
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 md:px-12 py-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Footer logo — smaller */}
+            <SparkAuditBrandLogo size="footer" />
+
+            {/* Links + copyright */}
+            <div className="flex flex-col items-center md:items-end gap-3">
+              <nav className="flex gap-6" aria-label="Footer navigation">
+                {['Privacy Policy', 'Terms of Access', 'Contact'].map(link => (
+                  <button
+                    key={link}
+                    className="transition-colors duration-150"
+                    style={{ fontSize: 11, fontWeight: 600, color: 'var(--sa-text-dim)', letterSpacing: '0.05em', background: 'none', border: 'none', cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--sa-text-dim)')}
+                  >
+                    {link}
+                  </button>
+                ))}
+              </nav>
+              <p style={{ fontSize: 11, color: 'var(--sa-text-dim)' }}>
+                &copy; {new Date().getFullYear()} NitechSpark Technologies. All rights reserved.
+              </p>
             </div>
-            <p className="text-[10px] text-slate-600">
-              &copy; {new Date().getFullYear()} NitechSpark Technologies. All rights reserved.
-            </p>
           </div>
         </div>
       </footer>
+
     </div>
   );
 };
 
-/* ── Feature Card Component ── */
-type AccentColor = 'emerald' | 'sky' | 'violet' | 'orange';
-const accentMap: Record<AccentColor, { border: string; bg: string; glow: string }> = {
-  emerald: { border: 'border-emerald-500/15', bg: 'from-emerald-500/10', glow: 'hover:shadow-emerald-500/10' },
-  sky:     { border: 'border-sky-500/15',     bg: 'from-sky-500/10',     glow: 'hover:shadow-sky-500/10' },
-  violet:  { border: 'border-violet-500/15',  bg: 'from-violet-500/10',  glow: 'hover:shadow-violet-500/10' },
-  orange:  { border: 'border-orange-500/15',  bg: 'from-orange-500/10',  glow: 'hover:shadow-orange-500/10' },
-};
-
-const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; accentColor: AccentColor }> = ({ icon, title, desc, accentColor }) => {
-  const a = accentMap[accentColor];
-  return (
-    <div className={`p-5 sm:p-6 rounded-2xl border ${a.border} bg-gradient-to-b ${a.bg} to-slate-900/30 backdrop-blur-sm hover:shadow-lg ${a.glow} hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between h-full`}>
-      <div>
-        <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-          {icon}
-        </div>
-        <h4 className="text-xs font-black text-white mb-2 uppercase tracking-wider">{title}</h4>
-        <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
-      </div>
+/* ═══════════════════════════════════════════════
+   FEATURE CARD
+   ═══════════════════════════════════════════════ */
+const FeatureCard: React.FC<{
+  icon: React.ReactNode;
+  iconBg: string;
+  iconBorder: string;
+  title: string;
+  desc: string;
+  accentBorder: string;
+}> = ({ icon, iconBg, iconBorder, title, desc, accentBorder }) => (
+  <div
+    className="sa-card group flex flex-col gap-4 p-5 cursor-default"
+    style={{ border: `1px solid ${accentBorder}`, background: 'var(--sa-card)' }}
+  >
+    <div
+      className="flex items-center justify-center rounded-xl flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+      style={{
+        width: 40, height: 40,
+        background: iconBg,
+        border: `1px solid ${iconBorder}`,
+      }}
+    >
+      {icon}
     </div>
-  );
-};
+    <div>
+      <h4
+        className="font-bold mb-1.5"
+        style={{ fontSize: 13, color: 'var(--sa-text)', letterSpacing: '0.01em' }}
+      >
+        {title}
+      </h4>
+      <p style={{ fontSize: 12, color: 'var(--sa-text-muted)', lineHeight: 1.65 }}>
+        {desc}
+      </p>
+    </div>
+  </div>
+);
 
-/* ── Module Card Component ── */
-const colorMap: Record<string, { icon: string; border: string; bg: string }> = {
-  blue:    { icon: 'text-blue-400',   border: 'border-blue-500/12',   bg: 'from-blue-600/8' },
-  violet:  { icon: 'text-violet-400', border: 'border-violet-500/12', bg: 'from-violet-600/8' },
-  cyan:    { icon: 'text-cyan-400',   border: 'border-cyan-500/12',   bg: 'from-cyan-600/8' },
-  emerald: { icon: 'text-emerald-400',border: 'border-emerald-500/12',bg: 'from-emerald-600/8' },
-  indigo:  { icon: 'text-indigo-400', border: 'border-indigo-500/12', bg: 'from-indigo-600/8' },
-  orange:  { icon: 'text-orange-400', border: 'border-orange-500/12', bg: 'from-orange-600/8' },
-};
+/* ═══════════════════════════════════════════════
+   MODULE CARD
+   ═══════════════════════════════════════════════ */
+const ModuleCard: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  accent: string;
+  delay?: number;
+}> = ({ icon, title, desc, accent, delay = 0 }) => (
+  <div
+    className="group flex gap-4 p-5 rounded-2xl cursor-default transition-all duration-200"
+    style={{
+      background: 'var(--sa-card)',
+      border: '1px solid var(--sa-border)',
+      animationDelay: `${delay}ms`,
+    }}
+    onMouseEnter={e => {
+      const el = e.currentTarget as HTMLDivElement;
+      el.style.transform = 'translateY(-3px)';
+      el.style.borderColor = `${accent}25`;
+      el.style.boxShadow = `0 8px 24px rgba(0,0,0,0.25)`;
+    }}
+    onMouseLeave={e => {
+      const el = e.currentTarget as HTMLDivElement;
+      el.style.transform = '';
+      el.style.borderColor = 'var(--sa-border)';
+      el.style.boxShadow = '';
+    }}
+  >
+    <div
+      className="flex items-center justify-center rounded-xl flex-shrink-0 mt-0.5 group-hover:scale-105 transition-transform duration-200"
+      style={{
+        width: 38, height: 38,
+        background: `${accent}15`,
+        border: `1px solid ${accent}25`,
+        color: accent,
+      }}
+    >
+      {icon}
+    </div>
+    <div className="min-w-0">
+      <h4
+        className="font-bold mb-1"
+        style={{ fontSize: 13, color: 'var(--sa-text)', letterSpacing: '0.01em' }}
+      >
+        {title}
+      </h4>
+      <p style={{ fontSize: 12, color: 'var(--sa-text-muted)', lineHeight: 1.65 }}>
+        {desc}
+      </p>
+    </div>
+  </div>
+);
 
-const ModuleCard: React.FC<{ icon: React.ReactNode; title: string; desc: string; color: string }> = ({ icon, title, desc, color }) => {
-  const c = colorMap[color] || colorMap.blue;
+/* ═══════════════════════════════════════════════
+   STAT ITEM
+   ═══════════════════════════════════════════════ */
+const StatItem: React.FC<{
+  value: number;
+  suffix: string;
+  label: string;
+  icon: React.ReactNode;
+  live?: boolean;
+}> = ({ value, suffix, label, icon, live }) => {
+  const { count, containerRef } = useCounter(value, 1600);
   return (
-    <div className={`p-5 rounded-2xl border ${c.border} bg-gradient-to-b ${c.bg} to-transparent hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group flex gap-3.5 items-start`}>
-      <div className={`w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.07] flex items-center justify-center flex-shrink-0 ${c.icon} group-hover:scale-105 transition-transform mt-0.5`}>
+    <div ref={containerRef} className="text-center flex flex-col items-center gap-3">
+      <div
+        className="flex items-center justify-center rounded-xl"
+        style={{
+          width: 44, height: 44,
+          background: 'rgba(37,99,235,0.08)',
+          border: '1px solid rgba(37,99,235,0.15)',
+          color: '#60a5fa',
+        }}
+      >
         {icon}
       </div>
       <div>
-        <h4 className="text-xs font-black text-white mb-1 uppercase tracking-wider">{title}</h4>
-        <p className="text-xs text-slate-400 leading-relaxed">{desc}</p>
+        <div className="flex items-baseline justify-center gap-0.5">
+          <span className="sa-stat-number">{count}</span>
+          <span className="sa-stat-suffix" style={{ fontSize: '1.2rem', fontWeight: 900 }}>
+            {suffix}
+          </span>
+          {live && (
+            <span
+              className="ml-2 rounded-full"
+              style={{
+                width: 7, height: 7,
+                background: '#10b981',
+                display: 'inline-block',
+                animation: 'sa-pulse 2s ease infinite',
+              }}
+            />
+          )}
+        </div>
+        <p className="sa-stat-label">{label}</p>
       </div>
-    </div>
-  );
-};
-
-/* ── Stat Item Component ── */
-const StatItem: React.FC<{ value: number; suffix: string; label: string; live?: boolean }> = ({ value, suffix, label, live }) => {
-  const count = useCounter(value, 1600);
-  return (
-    <div className="text-center">
-      <div className="flex items-baseline justify-center gap-0.5">
-        <span className="text-3xl sm:text-4xl font-black text-white tabular-nums">{count}</span>
-        <span className="text-lg sm:text-xl font-black text-cyan-400">{suffix}</span>
-        {live && (
-          <span className="ml-2 w-2 h-2 bg-emerald-400 rounded-full animate-pulse inline-block" />
-        )}
-      </div>
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">{label}</p>
     </div>
   );
 };
