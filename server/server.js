@@ -1257,27 +1257,59 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self' blob:; frame-ancestors 'self' http://localhost:3000 http://localhost:3001; frame-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:;");
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self' blob: data: https:; connect-src 'self' https: http: blob: data:; frame-ancestors 'self' http://localhost:3000 http://localhost:3001; frame-src 'self' blob: data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https:; font-src 'self' data: https://fonts.gstatic.com https:; img-src 'self' data: blob: https: http:;"
+  );
   next();
 });
 
 // Production CORS configuration (Phase 3 P2-3)
 const parseCorsOrigins = () => {
+  const defaults = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:5173',
+    'https://sparkaudit.nitechspark.site',
+    'https://nitechspark.site',
+    'https://nitechspark.in'
+  ];
   if (process.env.CORS_ORIGINS) {
-    return process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+    const custom = process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+    return [...new Set([...defaults, ...custom])];
   }
-  return ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:5173'];
+  return defaults;
 };
 
 const allowedOrigins = parseCorsOrigins();
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (!IS_PRODUCTION) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  const lower = origin.toLowerCase();
+  if (
+    lower.includes('nitechspark.site') ||
+    lower.includes('nitechspark.in') ||
+    lower.includes('onrender.com') ||
+    lower.includes('localhost') ||
+    lower.includes('127.0.0.1')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (!IS_PRODUCTION || allowedOrigins.includes(origin) || (origin && origin.includes('.onrender.com'))) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS origin ${origin} not permitted.`));
+      // Never throw an Error object here - throwing returns an HTTP 500 HTML error
+      // which breaks browser stylesheet & script loading for asset requests!
+      return callback(null, false);
     },
     credentials: true
   })
