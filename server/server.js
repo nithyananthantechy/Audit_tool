@@ -133,7 +133,7 @@ const inMemoryTables = {
 };
 
 class MockDatabase {
-  prepare(queryStr) {
+  prepare(queryStr, ...prepArgs) {
     let paramCount = 0;
     const pgQuery = queryStr.replace(/\?/g, () => {
       paramCount++;
@@ -337,7 +337,7 @@ class MockDatabase {
 
       if (lowerQ.startsWith('update')) {
         const whereId = args[args.length - 1];
-        const record = data.find(r => r.id === whereId || r.userId === whereId || r.token === whereId);
+        const record = data.find(r => r.id === whereId || r.userId === whereId || r.token === whereId || (r.email && r.email.toLowerCase() === String(whereId).toLowerCase()));
         if (record) {
           const setMatch = q.match(/set\s+(.*?)\s+where/i);
           if (setMatch) {
@@ -418,9 +418,13 @@ class MockDatabase {
         } else if (lowerQ.includes('where organizationid = ? and role !=')) {
           results = results.filter(r => (r.organizationId === args[0] || r.organizationid === args[0]) && r.role !== args[1]);
         } else if (lowerQ.includes('where organizationid = ? or organizationid is null')) {
-          results = results.filter(r => (r.organizationId === args[0] || r.organizationid === args[0]) || (!r.organizationId && !r.organizationid));
+          results = results.filter(r => {
+            const rOrg = r.organizationId || r.organizationid;
+            if (args[0]) return rOrg === args[0];
+            return !rOrg;
+          });
         } else if (lowerQ.includes('where organizationid = ?')) {
-          results = results.filter(r => r.organizationId === args[0] || r.organizationid === args[0]);
+          results = results.filter(r => (r.organizationId || r.organizationid) === args[0]);
         }
 
         if (lowerQ.includes('order by')) {
@@ -436,7 +440,8 @@ class MockDatabase {
     };
 
     return {
-      get: async (...args) => {
+      get: async (...callArgs) => {
+        const args = callArgs.length > 0 ? callArgs : prepArgs;
         if (sql && process.env.NODE_ENV !== 'test') {
           try {
             const res = await sql.query(pgQuery, args);
@@ -451,7 +456,8 @@ class MockDatabase {
           return Array.isArray(memRes) ? memRes[0] : memRes;
         }
       },
-      all: async (...args) => {
+      all: async (...callArgs) => {
+        const args = callArgs.length > 0 ? callArgs : prepArgs;
         if (sql && process.env.NODE_ENV !== 'test') {
           try {
             const res = await sql.query(pgQuery, args);
@@ -464,11 +470,12 @@ class MockDatabase {
           return executeInMemory('all', args);
         }
       },
-      run: async (...args) => {
+      run: async (...callArgs) => {
+        const args = callArgs.length > 0 ? callArgs : prepArgs;
         if (sql && process.env.NODE_ENV !== 'test') {
           try {
             const res = await sql.query(pgQuery, args);
-            return res;
+            return { rowCount: res.length || 1 };
           } catch (e) {
             console.warn('[SQL RUN FALLBACK to in-memory]:', e.message);
             return executeInMemory('run', args);
