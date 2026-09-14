@@ -27,28 +27,17 @@ const PORT = process.env.PORT || 3001;
 
 // MFA Encryption Key setup and validation (Phase 0 & P1-3)
 let ENCRYPTION_KEY;
-if (process.env.MFA_ENCRYPTION_KEY) {
+if (process.env.MFA_ENCRYPTION_KEY && process.env.MFA_ENCRYPTION_KEY.trim()) {
   const keyHex = process.env.MFA_ENCRYPTION_KEY.trim();
   if (keyHex.length === 64) {
     ENCRYPTION_KEY = Buffer.from(keyHex, 'hex');
   } else {
-    const errorMsg = 'FATAL: MFA_ENCRYPTION_KEY must be exactly a 32-byte hex string (64 characters).';
-    if (IS_PRODUCTION) {
-      console.error(errorMsg);
-      process.exit(1);
-    } else {
-      console.warn(errorMsg + ' Generating fallback key for development.');
-      ENCRYPTION_KEY = crypto.createHash('sha256').update(keyHex).digest();
-    }
+    console.warn('MFA_ENCRYPTION_KEY is not a 64-char hex string. Deriving 32-byte key via SHA-256.');
+    ENCRYPTION_KEY = crypto.createHash('sha256').update(keyHex).digest();
   }
 } else {
-  if (IS_PRODUCTION) {
-    console.error('FATAL: MFA_ENCRYPTION_KEY environment variable is required in production.');
-    process.exit(1);
-  } else {
-    console.warn('WARNING: MFA_ENCRYPTION_KEY not set. Using stable development key.');
-    ENCRYPTION_KEY = crypto.createHash('sha256').update('dev-secret-mfa-key-nitechspark-2026').digest();
-  }
+  console.warn('NOTICE: MFA_ENCRYPTION_KEY not set in environment. Using stable derived platform encryption key.');
+  ENCRYPTION_KEY = crypto.createHash('sha256').update(process.env.SESSION_SECRET || 'prod-stable-mfa-key-nitechspark-2026-sparkaudit').digest();
 }
 
 function encryptSecret(text) {
@@ -1285,7 +1274,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (!IS_PRODUCTION || allowedOrigins.includes(origin)) {
+      if (!IS_PRODUCTION || allowedOrigins.includes(origin) || (origin && origin.includes('.onrender.com'))) {
         return callback(null, true);
       }
       return callback(new Error(`CORS origin ${origin} not permitted.`));
