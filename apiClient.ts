@@ -298,6 +298,42 @@ export const api = {
     });
   },
 
+  getEvidenceViewUrl: (fileUrl: string): string => {
+    if (!fileUrl) return '';
+    const token = getAuthToken();
+    if (!token) return fileUrl;
+    return `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+  },
+
+  downloadEvidenceFile: async (fileUrl: string, fileName?: string): Promise<void> => {
+    if (!fileUrl) return;
+    try {
+      const token = getAuthToken();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(fileUrl, { headers });
+      if (!res.ok) {
+        // Fallback to direct navigation with query token
+        const fullUrl = api.getEvidenceViewUrl(fileUrl) + (fileUrl.includes('?') ? '&download=1' : '?download=1');
+        window.open(fullUrl, '_blank');
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName || fileUrl.split('/').pop() || 'compliance_evidence.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.error('File download failed, attempting window open:', err);
+      window.open(api.getEvidenceViewUrl(fileUrl), '_blank');
+    }
+  },
+
   // Enterprise GRC API Client Methods
   getAudits: async () => fetchJSON(`${API_Base}/audits`),
   createAudit: async (auditData: any) => fetchJSON(`${API_Base}/audits`, { method: 'POST', body: JSON.stringify(auditData) }),

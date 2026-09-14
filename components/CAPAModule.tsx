@@ -323,9 +323,15 @@ const CAPAModule: React.FC<CAPAProps> = ({ user, reports, setReports }) => {
                         </td>
                         <td className="px-8 py-5 text-right">
                           <div className="flex justify-end gap-4">
-                            <button className="text-slate-600 hover:text-white p-2 bg-white/5 rounded-xl transition-all border border-white/5">
-                              <Download size={16} />
-                            </button>
+                            {report.fileUrl ? (
+                              <button 
+                                onClick={() => api.downloadEvidenceFile(report.fileUrl!, report.fileName || 'capa_artifact.pdf')}
+                                title="Download CAPA report artifact"
+                                className="text-blue-400 hover:text-white p-2 bg-white/5 hover:bg-blue-600/20 rounded-xl transition-all border border-white/5 active:scale-95"
+                              >
+                                <Download size={16} />
+                              </button>
+                            ) : null}
                             <button className="text-blue-500 hover:text-white text-[9px] font-black uppercase tracking-widest bg-blue-600/10 hover:bg-blue-600 px-4 py-2 rounded-xl border border-blue-500/20 transition-all">
                               Details
                             </button>

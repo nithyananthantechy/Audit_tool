@@ -357,9 +357,14 @@ const ChecklistSubmission: React.FC<ChecklistProps> = ({ user, evidence, setEvid
                       <div className="flex items-center gap-6 text-[9px] font-black text-slate-600 uppercase tracking-widest">
                         <span className="flex items-center gap-2"><Calendar size={14} className="text-slate-700" /> {e.submissionDate}</span>
                         {e.fileUrl && (
-                          <span className="flex items-center gap-2 text-blue-500 cursor-pointer hover:text-blue-400 transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => api.downloadEvidenceFile(e.fileUrl!, e.fileName)}
+                            title="Download compliance artifact document"
+                            className="flex items-center gap-2 text-blue-500 cursor-pointer hover:text-blue-400 transition-colors bg-transparent border-0 p-0 text-[9px] font-black uppercase tracking-widest active:scale-95"
+                          >
                             <FileText size={14} /> Artifact Linked
-                          </span>
+                          </button>
                         )}
                       </div>
                     </div>

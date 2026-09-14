@@ -52,12 +52,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       {/* ══ NAVIGATION HEADER ══ */}
       <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${
         scrolled
-          ? 'bg-slate-950/85 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl shadow-black/50'
-          : 'bg-transparent border-b border-white/[0.04]'
+          ? 'bg-slate-950/90 backdrop-blur-xl border-b border-white/[0.08] shadow-2xl shadow-black/50'
+          : 'bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent border-b border-white/[0.04]'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 sm:h-20 flex items-center justify-between">
-          {/* Logo on Left (150-185px wide, auto height) */}
-          <div className="flex items-center pl-0">
+        <div className="w-full px-4 sm:px-6 md:px-10 h-20 sm:h-24 flex items-center justify-between">
+          {/* Logo on Far Left End */}
+          <div className="flex items-center">
             <SparkAuditBrandLogo />
           </div>
 
@@ -78,7 +78,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick }) => {
       </header>
 
       {/* ══ HERO SECTION ══ */}
-      <section className="relative min-h-[calc(100vh-80px)] flex items-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
+      <section className="relative min-h-[calc(100vh-96px)] flex items-center pt-32 sm:pt-40 pb-12 sm:pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto">
 
         {/* Ambient mesh background */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

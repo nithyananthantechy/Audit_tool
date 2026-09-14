@@ -21,7 +21,7 @@ export const SparkAuditBrandLogo: React.FC<{
         src={NITECHSPARK_LOGO}
         alt="SparkAudit Logo"
         style={width ? { width: typeof width === 'number' ? `${width}px` : width, height: 'auto' } : undefined}
-        className="w-[240px] sm:w-[300px] md:w-[350px] lg:w-[380px] h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+        className="w-[200px] sm:w-[250px] md:w-[280px] max-h-16 sm:max-h-[76px] h-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
       />
       {showSubtitle && (
         <span className="text-[9px] font-black text-cyan-400/90 uppercase tracking-[0.25em] mt-0.5 pl-1">

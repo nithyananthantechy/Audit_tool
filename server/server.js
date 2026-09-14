@@ -367,6 +367,10 @@ class MockDatabase {
 
       if (lowerQ.startsWith('delete')) {
         const whereVal = args[0];
+        if (lowerQ.includes('where organizationid = ?')) {
+          inMemoryTables[table] = data.filter(r => r.organizationId !== whereVal && r.organizationid !== whereVal);
+          return { rowCount: 1 };
+        }
         const idx = data.findIndex(r => r.id === whereVal || r.token === whereVal || r.userId === whereVal);
         if (idx !== -1) data.splice(idx, 1);
         return { rowCount: 1 };
@@ -376,6 +380,14 @@ class MockDatabase {
         let results = [...data];
 
         if (lowerQ.includes('count(*)')) {
+          if (lowerQ.includes('where organizationid = ? and isactive = 1')) {
+            const c = data.filter(r => (r.organizationId === args[0] || r.organizationid === args[0]) && (r.isActive === 1 || r.isActive === true || r.isactive === 1 || r.isactive === true)).length;
+            return [{ count: c }];
+          }
+          if (lowerQ.includes('where organizationid = ?')) {
+            const c = data.filter(r => r.organizationId === args[0] || r.organizationid === args[0]).length;
+            return [{ count: c }];
+          }
           if (lowerQ.includes('where isread = 0')) {
             const unread = data.filter(r => r.userId === args[0] && (r.isRead === 0 || !r.isRead)).length;
             return [{ count: unread }];
@@ -385,14 +397,16 @@ class MockDatabase {
             return [{ count: c }];
           }
           if (lowerQ.includes('where role =')) {
-            const c = data.filter(r => r.role === 'Super Admin' && r.isActive !== 0).length;
+            const c = data.filter(r => r.role === 'Super Admin' && (r.isActive !== 0 && r.isactive !== 0)).length;
             return [{ count: c }];
           }
           return [{ count: data.length }];
         }
 
-        if (lowerQ.includes('where lower(email) = lower(?)')) {
+        if (lowerQ.includes('where lower(email) = lower(?)') || lowerQ.includes('where lower(email) = ?') || lowerQ.includes('where email = ?')) {
           results = results.filter(r => r.email && r.email.toLowerCase() === String(args[0]).toLowerCase());
+        } else if (lowerQ.includes('where code = ?')) {
+          results = results.filter(r => r.code === args[0]);
         } else if (lowerQ.includes('where token = ?')) {
           results = results.filter(r => r.token === args[0]);
         } else if (lowerQ.includes('where id = ?')) {
@@ -401,6 +415,12 @@ class MockDatabase {
           results = results.filter(r => r.userId === args[0]);
         } else if (lowerQ.includes('where department = ?')) {
           results = results.filter(r => r.department === args[0]);
+        } else if (lowerQ.includes('where organizationid = ? and role !=')) {
+          results = results.filter(r => (r.organizationId === args[0] || r.organizationid === args[0]) && r.role !== args[1]);
+        } else if (lowerQ.includes('where organizationid = ? or organizationid is null')) {
+          results = results.filter(r => (r.organizationId === args[0] || r.organizationid === args[0]) || (!r.organizationId && !r.organizationid));
+        } else if (lowerQ.includes('where organizationid = ?')) {
+          results = results.filter(r => r.organizationId === args[0] || r.organizationid === args[0]);
         }
 
         if (lowerQ.includes('order by')) {
@@ -1238,10 +1258,10 @@ app.use('/api', rateLimitMiddleware);
 // Security Headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:;");
+  res.setHeader('Content-Security-Policy', "default-src 'self' blob:; frame-ancestors 'self' http://localhost:3000 http://localhost:3001; frame-src 'self' blob: data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:;");
   next();
 });
 
@@ -1288,10 +1308,15 @@ function generateToken() {
 async function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    }
+    if (!token) {
       return res.status(401).json({ error: 'Authentication required. Please log in.' });
     }
-    const token = authHeader.split(' ')[1];
     const tokenData = await db.prepare('SELECT * FROM tokens WHERE token = ?').get(token);
     if (!tokenData) {
       return res.status(401).json({ error: 'Invalid or expired session token.' });
@@ -1964,6 +1989,21 @@ app.post('/api/admin/organizations/:id/renew', authMiddleware, requireRole('Supe
 // USER MANAGEMENT WITH RBAC (Phase 1 P0-3 & Phase 2 P1-6)
 // ============================================================================
 
+app.get('/api/users', authMiddleware, async (req, res) => {
+  try {
+    let users;
+    if (req.user.role === 'Super Admin') {
+      users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts, mfaEnabled, organizationId FROM users').all();
+    } else {
+      const userOrg = req.user.organizationId || 'org-niutechspark';
+      users = await db.prepare('SELECT id, name, email, role, department, isActive, isLocked, loginAttempts, mfaEnabled, organizationId FROM users WHERE organizationId = ? OR organizationId IS NULL', userOrg).all();
+    }
+    res.json({ success: true, users });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve user directory.' });
+  }
+});
+
 app.post('/api/users', authMiddleware, requireRole('Super Admin', 'Org Admin'), async (req, res) => {
   try {
     const newUser = req.body;
@@ -2193,6 +2233,13 @@ app.get('/api/files/:key', authMiddleware, (req, res) => {
     return res.status(404).json({ error: 'Compliance artifact file not found.' });
   }
 
+  if (req.query && req.query.download) {
+    return res.download(path.resolve(filePath), sanitizedKey);
+  }
+
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Content-Disposition', `inline; filename="${sanitizedKey}"`);
   res.sendFile(path.resolve(filePath));
 });
 
@@ -2857,7 +2904,7 @@ app.post('/api/audits', authMiddleware, requireRole('Super Admin', 'Org Admin', 
       crypto.randomUUID(), req.user.id, req.user.name, req.user.department, 'Audit Created', `Created audit ${auditId}: ${name}`, now, orgId
     );
 
-    res.json({ success: true, audit: { id, auditId, organizationId: orgId, name, type, status: status || 'Planning' } });
+    res.status(201).json({ success: true, audit: { id, auditId, organizationId: orgId, name, type, status: status || 'Planning' } });
   } catch (err) {
     console.error('Create Audit Error:', err);
     res.status(500).json({ error: 'Failed to create audit.' });
@@ -2976,7 +3023,7 @@ app.post('/api/evidence-requests', authMiddleware, requireRole('Super Admin', 'O
       id, requestId, auditId || 'AUD-MAIN', controlId, department, evidenceRequired, assignedTo || 'Department Lead', priority || 'Medium', dueDate || now.slice(0, 10), 'Requested', orgId, now
     );
 
-    res.json({ success: true, requestId });
+    res.status(201).json({ success: true, requestId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create evidence request.' });
   }
